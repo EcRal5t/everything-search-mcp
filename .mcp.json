@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "everything": {
+      "command": "node",
+      "args": [
+        "src/cli.js"
+      ]
+    }
+  }
+}

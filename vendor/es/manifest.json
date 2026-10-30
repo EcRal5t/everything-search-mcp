@@ -1,0 +1,26 @@
+{
+  "version": "1.1.0.38",
+  "source": "https://github.com/voidtools/ES/tree/1.1.0.38",
+  "files": [
+    {
+      "path": "x64/es.exe",
+      "sha256": "f7378761cf6e01f51c4123a485e628d70e3fea147d341f473ce2820844e5cee5",
+      "source": "https://www.voidtools.com/ES-1.1.0.38.x64.zip"
+    },
+    {
+      "path": "x86/es.exe",
+      "sha256": "d3fef37ce9f25a44bb2898848b8eca0f44b0b22766b644c6e4e436b7f9d4b4fe",
+      "source": "https://www.voidtools.com/ES-1.1.0.38.x86.zip"
+    },
+    {
+      "path": "ARM64/es.exe",
+      "sha256": "7fc406610559f686a95a9bfc4472acffdebcc143b485ae9371b5ef4590e7ec31",
+      "source": "https://www.voidtools.com/ES-1.1.0.38.ARM64.zip"
+    },
+    {
+      "path": "ARM/es.exe",
+      "sha256": "7a0ebe57eecdc1c7ae227732020f3b14ad80a8cea78f4d91c35bb8d8e1eac11d",
+      "source": "https://www.voidtools.com/ES-1.1.0.38.ARM.zip"
+    }
+  ]
+}

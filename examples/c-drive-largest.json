@@ -1,0 +1,15 @@
+{
+  "requests": [
+    {
+      "root": "C:\\",
+      "kind": "file",
+      "sort": "size",
+      "ascending": false,
+      "count": 20,
+      "fields": [
+        "size",
+        "date_modified"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "root": "C:\\",
+  "query": "size:>100mb",
+  "depth": 2,
+  "top": 20,
+  "max_entries": 20000,
+  "timeout_ms": 30000,
+  "mode": "directories"
+}

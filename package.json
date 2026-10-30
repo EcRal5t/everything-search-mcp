@@ -1,0 +1,40 @@
+{
+  "name": "everything-agent",
+  "private": true,
+  "type": "module",
+  "description": "Compact structured Everything search for AI agents over MCP and CLI",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "cli": "node src/cli.js",
+    "test": "node --test test/*.test.js",
+    "test:live": "node scripts/verify-live.js",
+    "install:codex": "node scripts/install-codex.js",
+    "test:parity": "node scripts/verify-parity.js",
+    "check:transfer": "node scripts/verify-transfer.js",
+    "pack:transfer": "node scripts/create-transfer.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "pcre2-wasm": "10.49.2",
+    "zod": "4.6.7"
+  },
+  "license": "MIT",
+  "bin": {
+    "everything-agent": "src/cli.js"
+  },
+  "files": [
+    "src/",
+    "vendor/es/",
+    "README.md",
+    "MIGRATION.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "scripts/discover.ps1",
+    "scripts/install-codex.js",
+    ".agents/skills/everything-search/SKILL.md",
+    "examples/"
+  ]
+}
