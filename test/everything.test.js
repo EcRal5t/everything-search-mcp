@@ -61,6 +61,23 @@ test('count requests zero rows and keeps a selected connection', async () => {
   await assert.rejects(c.search({ query: '', unexpected: true }));
 });
 
+test('count with file sizes sums the complete query across HTTP pages', async () => {
+  const rows = [row('a', '9007199254740993'), row('b', '30'), row('c', '20')];
+  const seen = [];
+  const c = client(async url => {
+    seen.push(url.searchParams.get('search'));
+    return page(url.searchParams.get('search').includes('absent') ? [] : rows, url);
+  }, { EVERYTHING_MAX_RESULTS: '2' });
+  assert.deepEqual(await c.search({ kind: 'file', query: 'ext:log', count: 0, fields: ['size'], offset: 99 }),
+    { total: 3, total_size_bytes: '9007199254741043', size_basis: 'indexed_logical' });
+  assert.ok(seen.every(query => query === 'file: <ext:log>'));
+  assert.deepEqual(await c.search({ kind: 'file', query: 'absent', count: 0, fields: ['size'] }),
+    { total: 0, total_size_bytes: 0, size_basis: 'indexed_logical' });
+  await assert.rejects(c.search({ kind: 'folder', count: 0, fields: ['size'] }), error => error.code === 'INVALID_ARGUMENT');
+  await assert.rejects(c.search({ sort: 'extension' }), error => error.code === 'UNSUPPORTED_QUERY');
+  await assert.rejects(c.search({ fields: ['date_created'] }), error => error.code === 'UNSUPPORTED_METADATA');
+});
+
 test('invalid responses and empty pages produce explicit errors', async () => {
   for (const [value, code] of [
     ['<html>', 'INVALID_RESPONSE'], [JSON.stringify({ totalResults: '42', results: [] }), 'INVALID_RESPONSE'],

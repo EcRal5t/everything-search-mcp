@@ -8,8 +8,10 @@ const git=async args=>{const r=await runProcess('git',args,{timeoutMs:30000});if
 const pending=await git(['-C',root,'status','--porcelain','--untracked-files=no']);
 if(pending)throw Error('Commit the working changes, then create the transfer archive.');
 const commit=await git(['-C',root,'rev-parse','HEAD']);
-const stage=path.join(root,'.tmp','transfer-'+randomUUID(),'everything-agent');
-await fs.mkdir(path.dirname(stage),{recursive:true});
+const staging=path.join(root,'.tmp','transfer-'+randomUUID());
+const stage=path.join(staging,'everything-agent');
+await fs.mkdir(staging,{recursive:true});
+try {
 await git(['clone','--local','--no-hardlinks',root,stage]);
 await git(['-C',stage,'remote','remove','origin']);
 const out=path.join(root,'artifacts','everything-agent-transfer.zip');
@@ -21,3 +23,7 @@ const zip=await fs.readFile(out);
 const report={archive:out,commit,bytes:zip.length,sha256:createHash('sha256').update(zip).digest('hex'),includes:['source','git_repository','dependency_lockfile','es_helpers','migration_prompt'],setup:'npm ci --ignore-scripts'};
 await fs.writeFile(path.join(root,'artifacts','transfer-report.json'),JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify(report));
+} finally {
+  if(path.dirname(staging)!==path.join(root,'.tmp'))throw Error('Transfer staging must be inside the project temporary directory.');
+  await fs.rm(staging,{recursive:true,force:true});
+}

@@ -6,11 +6,11 @@ export const requestSchema = z.object({
   recursive: z.boolean().default(true).describe('With root: descendants vs direct children.'),
   kind: z.enum(['any', 'file', 'folder']).default('any'),
   regex: z.boolean().default(false).describe('Query as PCRE; root/kind still apply.'),
-  count: z.number().int().min(0).max(1000).default(20).describe('Maximum rows; 0 returns only the count.'),
+  count: z.number().int().min(0).max(1000).default(20).describe('Maximum rows; 0 counts. With kind:file and fields:[size], also sums all matched file bytes.'),
   offset: z.number().int().min(0).max(4294967295).default(0),
-  sort: z.enum(['name', 'path', 'size', 'date_modified']).default('path'),
+  sort: z.enum(['name', 'path', 'size', 'extension', 'date_modified', 'date_created', 'date_accessed', 'attributes', 'run_count']).default('path').describe('HTTP supports name/path/size/date_modified; IPC supports all listed sorts.'),
   ascending: z.boolean().default(true),
-  fields: z.array(z.enum(['size', 'date_modified'])).max(2).default([]),
+  fields: z.array(z.enum(['size', 'date_modified', 'date_created', 'date_accessed', 'attributes', 'run_count'])).max(6).default([]).describe('Optional columns. IPC supports all; HTTP metadata depends on the server.'),
 }).strict();
 export const searchSchema = requestSchema.extend({ timeout_ms: z.number().int().min(100).max(120000).optional() });
 export const requestsSchema = z.object({ requests: z.array(requestSchema).min(1).max(8) }).strict();
@@ -23,7 +23,7 @@ export const searchOutputSchema = z.object({ results: z.array(z.union([
     columns: z.array(z.string()), rows: z.array(z.array(z.union([z.string(), z.number(), z.null()]))),
     limited_by: z.array(z.string()).optional(), size_basis: z.literal('indexed_logical').optional(),
   }).strict(),
-  z.object({ total: uint }).strict(), z.object({ error: errorSchema }).strict(),
+  z.object({ total: uint, total_size_bytes: z.union([uint, z.string()]).optional(), size_basis: z.literal('indexed_logical').optional() }).strict(), z.object({ error: errorSchema }).strict(),
 ])) }).strict();
 export const statusOutputSchema = z.object({
   ready: z.boolean(), transport: z.string().nullable(), version: z.string().nullable(), instance: z.string().nullable(),

@@ -45,6 +45,24 @@ test('configuration errors remain discoverable through status', async () => {
     assert.equal(result.structuredContent.problems[0].code, 'INVALID_CONFIG');
   } finally { await c.close(); await server.close(); }
 });
+test('MCP rejects unknown arguments before running a search', async () => {
+  const backend = { search: async () => { throw new Error('Search runs after validation'); } };
+  const server = createServer(backend), c = await connect(server);
+  try {
+    const tools = (await c.listTools()).tools;
+    const schema = tools.find(tool => tool.name === 'everything_search').inputSchema;
+    assert.equal(schema.additionalProperties, false);
+    assert.equal(schema.properties.requests.items.additionalProperties, false);
+    for (const key of ['rrot', 'cnt', 'knd']) {
+      const result = await c.callTool({ name: 'everything_search', arguments: { requests: [{ [key]: 'typo' }] } });
+      assert.equal(result.isError, true);
+      assert.match(result.content[0].text, new RegExp(`Unrecognized key: "${key}"`));
+    }
+    const result = await c.callTool({ name: 'everything_search', arguments: { requests: [{ count: 0 }], typo: true } });
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /Unrecognized key: "typo"/);
+  } finally { await c.close(); await server.close(); }
+});
 test('thrown errors remain readable after output schema discovery', async () => {
   const client = backend();
   client.status = async () => { throw new AgentError('CONNECTION_FAILED', 'Check the selected service.'); };

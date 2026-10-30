@@ -6,7 +6,7 @@ import { syntax } from './everything.js';
 import { compactSearch } from './compact.js';
 import { errorResult, requestsSchema, diagnosticSchema, searchOutputSchema, statusOutputSchema } from './schema.js';
 
-export const instructions = 'Search the selected live index. Combine base and relative row path for an absolute path; columns label cells. count:0 counts; recursive:false lists children. Page with next_offset and unchanged filters. Use rg for content. File/folder sizes use indexed logical bytes.';
+export const instructions = 'Search the selected live index. Combine base and relative row path for an absolute path; columns label cells. count:0 counts; add kind:file, fields:[size] for total file bytes. recursive:false lists children. Page with next_offset and unchanged filters. Use rg for content. File/folder sizes use indexed logical bytes.';
 export function createServer(client = new AgentClient()) {
   const server = new McpServer({ name: 'everything-agent', version: 'unreleased' }, { instructions });
   const register = (name, description, inputSchema, outputSchema, handler) => server.registerTool(name, {

@@ -1,13 +1,12 @@
 import { stat } from 'node:fs/promises';
-import { createPCRE2, FLAGS } from 'pcre2-wasm';
 import { AgentError } from './schema.js';
 
 let compiler;
 export async function validatePattern(pattern) {
-  compiler ??= createPCRE2();
-  const pcre = await compiler;
-  try { const code = pcre.compile(pattern, FLAGS.UTF); code.destroy(); }
-  catch (error) { throw new AgentError('INVALID_REGEX', `Invalid PCRE pattern: ${error.message}`, false, 'Use *.pdf as a query, or use a PCRE pattern such as \.pdf$ with regex:true.'); }
+  compiler ??= import('pcre2-wasm').then(async ({ createPCRE2, FLAGS }) => ({ pcre: await createPCRE2(), flags: FLAGS.UTF }));
+  const { pcre, flags } = await compiler;
+  try { const code = pcre.compile(pattern, flags); code.destroy(); }
+  catch (error) { throw new AgentError('INVALID_REGEX', `Invalid PCRE pattern: ${error.message}`, false, 'Use *.pdf as a query, or use a PCRE pattern such as \\.pdf$ with regex:true.'); }
 }
 
 // Preserve quoted filename literals while identifying query functions.

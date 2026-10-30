@@ -31,18 +31,36 @@ try {
   assert.deepEqual(tools, ['everything_search', 'everything_status']);
   const status = await call('everything_status', { verbose: true });
   assert.equal(status.ready, true);
+  const extraFields = status.transport === 'ipc' ? ['date_created', 'date_accessed', 'attributes', 'run_count'] : [];
   // Wait for the live index to observe the new fixture and its size metadata.
   const deadline = Date.now() + 15000;
   let files;
   do {
-    [files] = await search([{ root, kind: 'file', fields: ['size', 'date_modified'] }]);
+    [files] = await search([{ root, kind: 'file', fields: ['size', 'date_modified', ...extraFields] }]);
     if (files.rows?.length === samples.length && files.rows.every(row => samples.some(([name, size]) => name === row[0] && size === row[2]))) break;
     await new Promise(resolve => setTimeout(resolve, 200));
   } while (Date.now() < deadline);
   assert.equal(files.total, samples.length);
   assert.deepEqual(files.rows.map(row => [row[0], row[2]]).sort(), [...samples].sort());
   assert.ok(files.rows.every(row => /^\d{4}-.*Z$/.test(row[3])));
+  if (extraFields.length) {
+    assert.ok(files.rows.every(row => /^\d{4}-.*Z$/.test(row[4]) && /^\d{4}-.*Z$/.test(row[5])));
+    assert.ok(files.rows.every(row => Number.isInteger(row[6]) && row[6] >= 0 && row[7] === 0));
+    const [created] = await search([{ root, kind: 'file', sort: 'date_created', fields: ['date_created'] }]);
+    assert.deepEqual(created.rows.map(row => row[2]), created.rows.map(row => row[2]).sort());
+  }
   assert.equal(files.rows.reduce((sum, row) => sum + row[2], 0), expected);
+  const [sum, subset, emptySum] = await search([
+    { root, kind: 'file', count: 0, fields: ['size'] },
+    { root, query: '^深 文件\\.txt$', regex: true, kind: 'file', count: 0, fields: ['size'] },
+    { root: path.join(root, '空目录'), kind: 'file', count: 0, fields: ['size'] },
+  ]);
+  assert.deepEqual(sum, { total: samples.length, total_size_bytes: expected, size_basis: 'indexed_logical' });
+  assert.equal(subset.total_size_bytes, 23);
+  assert.equal(emptySum.total_size_bytes, 0);
+  const typo = await c.callTool({ name: 'everything_search', arguments: { requests: [{ rrot: root, count: 0 }] } });
+  assert.equal(typo.isError, true);
+  assert.match(typo.content[0].text, /rrot/);
   const [count, browse, regex, chinese, space] = await search([
     { root, kind: 'file', count: 0 }, { root, recursive: false },
     { root, query: '^小 文件\\.txt$', regex: true }, { root, query: '深' }, { root, query: '"large file"' },
@@ -82,7 +100,7 @@ try {
   assert.equal(badSearch.isError, true);
   assert.deepEqual(badSearch.structuredContent.results.map(result => result.error.code), ['INVALID_REGEX', 'ROOT_NOT_FOUND']);
   await c.readResource({ uri: 'everything://syntax' });
-  console.log(JSON.stringify({ ok: true, transport: status.transport, instance: status.instance, version: status.version, server_version: c.getServerVersion().version, tools, sample_files: samples.length, indexed_logical_bytes: expected, folder_bytes: folders.rows, checks: ['stdio', 'unicode', 'spaces', 'nested_paths', 'file_size', 'modified_time', 'count', 'browse', 'pagination', 'regex', 'batch', 'folder_sizes', 'folder_size_sort_pagination', 'folder_total', 'largest_files', 'invalid_regex', 'missing_root', 'resource'] }));
+  console.log(JSON.stringify({ ok: true, transport: status.transport, instance: status.instance, version: status.version, server_version: c.getServerVersion().version, tools, sample_files: samples.length, indexed_logical_bytes: expected, folder_bytes: folders.rows, checks: ['stdio', 'unicode', 'spaces', 'nested_paths', 'file_size', 'modified_time', ...extraFields, 'total_file_size', 'empty_total', 'unknown_arguments', 'count', 'browse', 'pagination', 'regex', 'batch', 'folder_sizes', 'folder_size_sort_pagination', 'folder_total', 'largest_files', 'invalid_regex', 'missing_root', 'resource'] }));
 } finally {
   await c.close();
   assert.equal(path.dirname(root), path.join(project, '.tmp'));

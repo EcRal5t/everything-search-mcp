@@ -34,7 +34,7 @@ export class IpcTransport {
   options(input) {
     const args = ['-timeout', String(input.timeout_ms ?? this.timeoutMs), '-count', '4294967295', '-no-pause', '-no-highlight', '-no-hide-empty-search-results', '-no-empty-search-help', '-header', '-no-footer'];
     for (const flag of ['case','whole-word','match-path','diacritics','prefix','suffix','ignore-punctuation','ignore-whitespace']) args.push(`-no-${flag}`);
-    args.push('-sort', `${input.sort === 'date_modified' ? 'date-modified' : input.sort ?? 'path'}-${input.ascending === false ? 'descending' : 'ascending'}`);
+    args.push('-sort', `${(input.sort ?? 'path').replaceAll('_', '-')}-${input.ascending === false ? 'descending' : 'ascending'}`);
     return args;
   }
   async request(input, count, query, signal) {
@@ -49,26 +49,34 @@ export class IpcTransport {
     const totalResults = Number(text.trim());
     if (!Number.isSafeInteger(totalResults)) throw new AgentError('INVALID_RESPONSE', 'ES count exceeds the safe integer range');
     if (!count) return { totalResults, results: [] };
-    const csv = await this.call([...common, '-columns', 'filename;attributes' + (input.fields?.includes('size') ? ';size' : '') + (input.fields?.includes('date_modified') ? ';date-modified' : ''),
+    const fields = [...new Set(['attributes', ...(input.fields ?? [])])];
+    const csv = await this.call([...common, '-columns', ['filename', ...fields.map(field => field.replaceAll('_', '-'))].join(';'),
       '-csv','-no-folder-append-path-separator','-no-digit-grouping','-size-format','1','-date-format','2',
       '-viewport-offset',String(input.offset ?? 0),'-viewport-count',String(count),'--',query],signal,input.timeout_ms);
     const [header = [], ...rows] = parseCSV(csv);
-    const filename = header.indexOf('Filename'), attributes = header.indexOf('Attributes'), size = header.indexOf('Size'), modified = header.indexOf('Date Modified');
-    if (filename < 0 || attributes < 0 || rows.length > count) throw new AgentError('INVALID_RESPONSE', 'ES returned unexpected CSV columns or too many rows');
+    const filename = header.indexOf('Filename'), attributes = header.indexOf('Attributes');
+    const indexes = fields.map(field => [field, header.indexOf(field.split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' '))]);
+    if (filename < 0 || indexes.some(([, index]) => index < 0) || rows.length > count) throw new AgentError('INVALID_RESPONSE', 'ES returned unexpected CSV columns or too many rows');
     const results = rows.map(row => {
       if (row.length !== header.length) throw new AgentError('INVALID_RESPONSE', 'ES returned a malformed CSV row');
       const attr = row[attributes];
       if (!/^(?:\d+|[A-Z]*)$/.test(attr)) throw new AgentError('INVALID_RESPONSE', 'ES returned invalid attributes');
       const full = row[filename], folder = /^\d+$/.test(attr) ? Boolean(BigInt(attr) & 16n) : attr.includes('D');
       const drive = /^[a-z]:\\?$/i.test(full);
-      return { name: drive ? full.slice(0,2) : path.win32.basename(full), path: drive ? '' : path.win32.dirname(full), type: folder ? 'folder' : 'file', ...(size >= 0 ? {size:row[size]} : {}), ...(modified >= 0 ? {date_modified:row[modified]} : {}) };
+      return { name: drive ? full.slice(0,2) : path.win32.basename(full), path: drive ? '' : path.win32.dirname(full), type: folder ? 'folder' : 'file', ...Object.fromEntries(indexes.map(([field, index]) => [field, row[index]])) };
     });
     return { totalResults, results };
   }
-  async directorySize(root, input, signal) {
-    const query = composeQuery({ root, query: '', recursive: true, kind: 'file', regex: false });
+  async totalSize(input, query, signal) {
     const sum = (await this.call([...this.options(input), '-size-format', '1', '-no-digit-grouping', '-viewport-offset', '0', '-viewport-count', '4294967295', '-get-total-size', '--', query], signal, input.timeout_ms)).trim();
-    if (!/^\d+$/.test(sum)) throw new AgentError('INVALID_RESPONSE', 'Expected an integer byte count for the folder');
+    if (!/^\d+$/.test(sum)) throw new AgentError('INVALID_RESPONSE', 'Expected an integer byte count from ES');
+    if (sum === '18446744073709551615') {
+      if ((await this.request(input, 0, query, signal)).totalResults === 0) return '0';
+      throw new AgentError('METADATA_PENDING', 'Wait for indexed file sizes, then repeat the query.', true);
+    }
     return sum;
+  }
+  async directorySize(root, input, signal) {
+    return this.totalSize(input, composeQuery({ root, query: '', recursive: true, kind: 'file', regex: false }), signal);
   }
 }

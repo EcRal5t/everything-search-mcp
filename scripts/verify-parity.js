@@ -10,6 +10,8 @@ const http=new AgentClient({...process.env,EVERYTHING_URL:url});
 const cases=[{root:path.join(root,'src'),query:'ext:js',count:50,fields:['size','date_modified']},
  {root,recursive:false,kind:'folder',count:50,fields:['size']},
  {root:path.join(root,'src'),query:'^schema\\.js$',regex:true,count:10},
- {root:path.join(root,'src'),query:'ext:js !path:node_modules',count:50}];
+ {root:path.join(root,'src'),query:'ext:js !path:node_modules',count:50},
+ {root:path.join(root,'src'),query:'ext:js',kind:'file',count:0,fields:['size']},
+ {root:path.join(root,'src'),query:'everything-parity-absent-f7b6b12c',kind:'file',count:0,fields:['size']}];
 for(const input of cases){const a=await ipc.search(input),b=await http.search(input);assert.equal(a.total,b.total);assert.deepEqual(a,b);}
-console.log(JSON.stringify({ok:true,cases:cases.length,channels:['ipc','http'],checks:['paths','counts','metadata','folder_sizes','regex','exclusion','ordering']}));
+console.log(JSON.stringify({ok:true,cases:cases.length,channels:['ipc','http'],checks:['paths','counts','metadata','folder_sizes','total_file_size','empty_total','regex','exclusion','ordering']}));
