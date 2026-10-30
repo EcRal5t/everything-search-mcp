@@ -1,11 +1,11 @@
 # Everything Agent
 
-Everything 文件搜索 MCP，支持 Windows 上的 Everything 1.4.1+ 与 1.5。
-默认通过本机 IPC 自动发现客户端和实例，HTTP 用于已配置的服务。三个工具提供路径检索、数量统计、文件夹大小和容量汇总。
+Windows 上的 Everything 文件搜索 MCP，支持 Everything 1.4.1+ 与 1.5。
+提供路径检索、计数、目录浏览和文件/文件夹逻辑大小。文件内容检索可使用 rg，磁盘容量分析可使用专门的空间工具。
 
 ## 本地使用
 
-需要 Node.js 22+、已安装且正在运行的 Everything。首次索引完成后即可搜索。
+需要 Node.js 22+ 和已安装、正在运行且完成首次索引的 Everything。
 
 ```powershell
 npm ci --ignore-scripts
@@ -13,90 +13,69 @@ node src/cli.js doctor
 npm run install:codex
 ```
 
-`install:codex` 把本项目注册到 Codex，并安装搜索技能。已有配置保持原值；已有 HTTP 地址的配置可加上 `EVERYTHING_TRANSPORT=auto`，使 IPC 成为首选、该地址成为回退。重新加载 MCP 连接即可使用新接口。
-安装器记录当前 Node.js 可执行文件的绝对路径，MCP 使用安装时选定的 Node.js 22+ 运行。
-
-其他 MCP 客户端使用绝对路径：
+安装器将本项目注册到 Codex，并安装搜索技能；配置使用当前 Node.js 和仓库入口的绝对路径，已有条目保持原值。重新加载 MCP 连接即可发现工具。其他客户端使用实际绝对路径：
 
 ```json
-{"mcpServers":{"everything":{"command":"node","args":["D:/path/to/everything-agent/src/cli.js"]}}}
+{"mcpServers":{"everything":{"command":"D:/path/to/node.exe","args":["D:/path/to/everything-agent/src/cli.js"]}}}
 ```
 
-项目内 `.mcp.json` 适合以项目根目录作为工作目录的开发客户端。
-当前开发通过源码目录运行。MCP 握手标识为 `unreleased`，正式版本号在首次对外发布时确定。
+项目内 .mcp.json 适用于以项目根目录为工作目录的开发客户端。项目处于首次发布前，MCP 握手版本保持 unreleased。
 
-迁移到另一台 Windows 电脑时，发送 `artifacts/everything-agent-transfer.zip`。ZIP 内包含源码、Git 仓库、依赖锁文件和各架构 ES 工具。解压后在 `everything-agent` 目录执行 `npm ci --ignore-scripts`，即可运行 `node src/cli.js doctor`。
-详细操作与首条验证提示词见 [MIGRATION.md](MIGRATION.md)。
-
-## MCP 工具
+## 两个 MCP 工具
 
 | 工具 | 用途 |
 |---|---|
-| `everything_search` | `requests` 中提交 1–8 项查询；默认每项 20 行；`count:0` 统计；`recursive:false` 浏览直接子项 |
-| `everything_storage` | 默认返回最大文件；`mode:directories` 汇总目录；支持明确标记的部分汇总 |
-| `everything_status` | 查看实例、版本、连接、索引可用状态及修复提示；`verbose:true` 返回更多详情 |
+| everything_search | requests 中提交 1–8 项查询；默认每项 20 行；count:0 计数；recursive:false 浏览直接子项 |
+| everything_status | 读取选中的连接、实例、版本和索引可用状态；verbose:true 提供索引数量与限制 |
 
-一次比较多个文件夹大小：
+查找最大的文件：
 
 ```json
-{"requests":[{"root":"D:/Projects","recursive":false,"kind":"folder","fields":["size"],"sort":"size","ascending":false,"count":20}]}
+{"requests":[{"root":"D:/Projects","kind":"file","fields":["size"],"sort":"size","ascending":false,"count":20}]}
 ```
 
-也可以在同一次调用中，为多个 root 分别提交查询。文件和文件夹都保留大小。
-大小统一使用 `size_basis:indexed_logical`，适合索引内的目录比较；实际分配空间与可释放空间由磁盘空间工具计算。Everything 1.4 通过文件大小求和提供目录大小，1.5 使用索引中的目录汇总；求和遵循请求时间预算。
+比较直接子文件夹的大小，也可以在同次调用中提交多个 root：
 
-返回数据示例：
+```json
+{"requests":[{"root":"D:/Projects","recursive":false,"kind":"folder","fields":["size"],"count":20}]}
+```
+
+返回表格格式：
 
 ```json
 {"results":[{"base":"D:/Projects","total":2,"next_offset":null,"columns":["path","type","size_bytes"],"rows":[["app","folder",1048576],["notes.txt","file",256]],"size_basis":"indexed_logical"}]}
 ```
 
-`base` 与行中的路径组合成绝对路径；`columns` 对应每行的单元格。
-全局查询返回绝对路径。`size_bytes` 的超大整数使用十进制字符串；`modified_utc` 使用 UTC ISO 时间；`null` 表示待取得的元数据。
-用 `next_offset` 和原查询参数继续翻页。索引实时更新，翻页以当时的索引状态为准。
+base 与行路径组合为绝对路径；全局搜索直接返回绝对路径。columns 对应行单元格，next_offset 用于继续翻页。索引实时更新，分页以当时的索引状态为准。输出裁剪也会同步推进分页位置。
 
-搜索支持 Everything 路径、名称、扩展名、大小、日期等语法。目录排除示例为 `<ext:ts | ext:js> !path:node_modules !path:.git`。PCRE 模式使用 `regex:true`，由 PCRE2 编译器校验。1.4 与较早的 1.5 使用各自版本的 PCRE 功能；通用表达式适合跨版本使用。
-文件内容交给 `rg` 等文本工具。语法资源为 `everything://syntax`。
+fields 支持 size 和 date_modified。大小使用 indexed_logical 字节，超大整数以十进制字符串表示，待取得的文件元数据为 null；时间使用 UTC ISO 格式。Everything 1.4 IPC 通过 ES 对文件大小求和获得目录大小，1.5 IPC 使用索引值。HTTP 在缺少目录大小时仅扫描所请求文件夹内的索引文件；求和遵循整个搜索请求的时间预算，待取得的求和元数据返回 METADATA_PENDING。
 
-## 容量汇总
+搜索支持 Everything 名称、路径、扩展名、大小和日期语法。例如：<ext:ts | ext:js> !path:node_modules !path:.git。regex:true 将 query 作为 PCRE 表达式并预校验；后端按其 Everything 版本解释查询。查询语法资源为 everything://syntax。
 
-```json
-{"root":"D:/Projects","mode":"directories","depth":1,"max_entries":20000}
-```
+## 连接与边界
 
-目录汇总默认完成整个查询范围的扫描；超过 `max_entries` 时返回 `SCAN_LIMIT` 和范围调整提示。
-`allow_partial:true` 返回 `status:partial`、`ranking_scope:scanned_files`、扫描数量和 `directory_lower_bounds`。这些数值是按路径顺序已扫描文件的下界，排名覆盖已扫描范围。`size_complete` 表示匹配范围和大小元数据均已完成。
+默认通过包内 ES 1.1.0.38 和本机 IPC 自动发现实例。多个实例通过 EVERYTHING_INSTANCE 选择，空字符串选择默认实例；成功连接持续使用同一索引。Windows 实例枚举只读取运行中的实例标识。
 
-`mode:largest_files` 直接使用索引排序，排名覆盖整个匹配范围。
-
-## 自动发现与诊断
-
-默认使用包内 ES 1.1.0.38，包含 x64、x86、ARM64 和 ARM 架构。启动时枚举正在运行的实例；多个实例可通过 `EVERYTHING_INSTANCE` 选择。连接选定后持续使用该索引。
-
-`everything-agent doctor` 输出诊断 JSON；`everything-agent doctor --fix` 可启动已安装的 Everything。安装位置存在多个候选时，用 `EVERYTHING_EXE_PATH` 选择应用。
-
-HTTP 自动发现读取安装目录和用户配置中的启用状态与端口。Everything 1.4 使用内置 HTTP 服务；1.5 使用 HTTP 插件。HTTP 查询使用已运行的服务。配置涉及重载时，可在 Everything 中应用设置。
+显式设置 EVERYTHING_URL 时使用指定 HTTP 服务。1.4 的内置 HTTP 服务和 1.5 的 HTTP 插件均由用户在 Everything 中配置并启动。
 
 | 环境变量 | 用途 / 默认 |
 |---|---|
-| `EVERYTHING_TRANSPORT` | `auto` / `ipc` / `http`；默认自动发现 |
-| `EVERYTHING_INSTANCE` | 指定客户端实例，例如 `1.5a`；空字符串选择默认实例 |
-| `EVERYTHING_ES_PATH` | 自定义 ES 1.1.0.38+ 路径 |
-| `EVERYTHING_EXE_PATH` | doctor 启动的 Everything.exe |
-| `EVERYTHING_URL` | 显式 HTTP 地址；默认选择 HTTP，`TRANSPORT=auto` 时作为回退 |
-| `EVERYTHING_USERNAME` / `EVERYTHING_PASSWORD` | 显式 HTTP 认证 |
-| `EVERYTHING_MAX_RESULTS` | 单页与批量总行数上限，默认 1000 |
-| `EVERYTHING_OUTPUT_BYTES` | 单份 JSON 输出预算，默认 16384，范围 4096–65536 |
-| `EVERYTHING_RESPONSE_BYTES` | 后端响应预算，默认 2097152 |
-| `EVERYTHING_TIMEOUT_MS` | 请求时间预算，默认 15000 |
-| `EVERYTHING_OUTPUT_FORMAT` | `structured` 默认提供结构化结果与文本副本；`text` 提供单份 JSON 文本 |
+| EVERYTHING_INSTANCE | 选择实例，例如 1.5a；空字符串为默认实例 |
+| EVERYTHING_ES_PATH | 自定义 ES 1.1.0.38+ 可执行文件 |
+| EVERYTHING_URL | 显式 HTTP(S) 服务地址 |
+| EVERYTHING_USERNAME / EVERYTHING_PASSWORD | HTTP 认证 |
+| EVERYTHING_MAX_RESULTS | 单页及批量总行数上限，默认 1000 |
+| EVERYTHING_OUTPUT_BYTES | 最终 JSON 输出预算，默认 16384，范围 4096–65536 |
+| EVERYTHING_RESPONSE_BYTES | 后端单次响应预算，默认 2097152 |
+| EVERYTHING_TIMEOUT_MS | 搜索请求时间预算，默认 15000 |
 
-HTTP 可以连接远程服务；root 校验针对后端所在机器。本机连接会校验目录存在性，远程查询的范围由远程索引决定。
-MCP 在诊断阶段保持可发现，即使 Everything 正在启动，也能通过 status 获取状态。
+本机连接会检查 root 目录；远程 HTTP 的范围由远程索引确定。状态诊断在后端启动期间也可调用。搜索与诊断只读，安装操作由独立的 install:codex 脚本执行。
 
-## CLI 与验证
+接口精简后，最大文件和文件夹比较统一通过 everything_search 完成；容量分组汇总及部分扫描接口已移除。连接采用上述 IPC / 显式 URL 规则，输出统一提供结构化数据和 JSON 文本副本。
 
-CLI 提供 `mcp/doctor/setup/search/storage`。`search` 使用与 MCP 相同的 `requests` 格式，`storage` 使用相同的容量参数。支持 JSON、`--input file.json`、`--stdin`。stdout 输出一个 JSON 对象，错误退出码为 1。
+## CLI、验证与迁移
+
+CLI 提供 mcp、doctor、search、help。search 使用与 MCP 相同的 requests 格式，支持 JSON、--input file.json 和 --stdin；doctor 输出只读诊断。stdout 输出一个 JSON 对象，错误退出码为 1。
 
 ```powershell
 npm test
@@ -106,8 +85,6 @@ npm run check:transfer
 npm run pack:transfer
 ```
 
-`test:parity` 适用于同时启用 IPC 与 HTTP 的环境。
-`test:live` 通过真实 MCP stdio 调用验证中文、空格、多层目录、分页、大小及错误结果；4 个样本文件合计 142 个逻辑字节，验证完成后自动清理样本。IPC 显式使用 UTF-8 代码页，适配 Windows 的不同区域设置。
+test:live 通过真实 MCP stdio 验证中文、空格、多层目录、分页和逻辑大小，4 个样本文件合计 142 字节，完成后自动清理样本。IPC 显式使用 UTF-8 代码页，适配 Windows 区域设置。test:parity 需要将 EVERYTHING_TEST_HTTP_URL 设置为同一索引的已运行 HTTP 服务，比较 IPC 与 HTTP 查询结果。
 
-迁移内容覆盖 `src`、必要脚本、技能、示例、许可证与固定版本 ES。源码仓库中的个人备份和维护脚本由各自目录保留。
-第三方来源和哈希见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 `vendor/es/manifest.json`。
+pack:transfer 从已提交内容生成 artifacts/everything-agent-transfer.zip，包含源码、Git 仓库、锁文件和四种架构的固定版本 ES。迁移步骤见 [MIGRATION.md](MIGRATION.md)；第三方来源和哈希见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 vendor/es/manifest.json。

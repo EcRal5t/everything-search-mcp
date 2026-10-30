@@ -12,29 +12,21 @@ export async function validatePattern(pattern) {
 
 // Preserve quoted filename literals while identifying query functions.
 export function queryFunctions(query) {
-  let plain = '', quoted = false, depth = 0;
-  for (let i = 0; i < query.length; i++) {
-    const char = query[i];
-    if (char === '"') { quoted = !quoted; plain += ' '; continue; }
-    if (quoted) { plain += ' '; continue; }
-    const comparison = /[\d=]/.test(query[i + 1] ?? '') || query[i - 1] === ':';
-    if (char === '<' && !comparison) depth++;
-    if (char === '>' && !comparison && --depth < 0) throw new AgentError('INVALID_QUERY', 'Unbalanced query groups');
-    plain += char;
-  }
-  if (quoted || depth !== 0) throw new AgentError('INVALID_QUERY', 'Unbalanced query quotes or groups');
-  return [...plain.matchAll(/(?<![a-z0-9_-])\$?([a-z][a-z0-9_-]*):/gi)].map(m => m[1].toLowerCase());
+  const plain = query.replace(/"[^"]*"/g, ' ');
+  return [...plain.matchAll(/(?<![a-z0-9_-])\$?([a-z][a-z0-9_-]*):/gi)].map(match => match[1].toLowerCase());
 }
 
 export async function validateQuery(input) {
-  if (input.regex) return validatePattern(input.query);
-  for (const fn of queryFunctions(input.query)) {
+  if (input.regex) { await validatePattern(input.query); return []; }
+  const functions = queryFunctions(input.query);
+  for (const fn of functions) {
     if (/content$/.test(fn) || ['include-filelist', 'include', 'filter', 'macro'].includes(fn)) {
       throw new AgentError('UNSUPPORTED_QUERY', `Use path and indexed metadata functions here; ${fn}: requires a content/file-access tool.`, false, 'Find candidate paths here; use rg for file text.');
     }
     if (fn === 'regex') throw new AgentError('UNSUPPORTED_QUERY', 'Set regex:true and put the PCRE pattern in query.');
     if (['sort', 'count', 'offset', 'distinct', 'unique'].includes(fn)) throw new AgentError('UNSUPPORTED_QUERY', `${fn}: changes paging or result semantics; use the corresponding request parameters.`);
   }
+  return functions;
 }
 
 export async function validateRoot(root, timeoutMs = 3000, signal) {

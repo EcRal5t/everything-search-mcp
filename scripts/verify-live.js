@@ -28,7 +28,7 @@ try {
   await c.connect(new StdioClientTransport({ command: process.execPath, args: [path.join(project, 'src/cli.js')], stderr: 'pipe' }));
   assert.equal(c.getServerVersion().version, 'unreleased');
   const tools = (await c.listTools()).tools.map(t => t.name).sort();
-  assert.deepEqual(tools, ['everything_search', 'everything_status', 'everything_storage']);
+  assert.deepEqual(tools, ['everything_search', 'everything_status']);
   const status = await call('everything_status', { verbose: true });
   assert.equal(status.ready, true);
   // Wait for the live index to observe the new fixture and its size metadata.
@@ -72,29 +72,17 @@ try {
   const [largestFolder, nextFolder] = await search([{ ...folderArgs, count: 1 }, { ...folderArgs, count: 1, offset: 1 }]);
   assert.deepEqual(largestFolder.rows, folders.rows.slice(0, 1));
   assert.deepEqual(nextFolder.rows, folders.rows.slice(1, 2));
-  const storage = await call('everything_storage', { root, mode: 'directories', depth: 1 });
-  assert.equal(storage.status, 'complete');
-  assert.equal(storage.size_complete, true);
-  assert.equal(storage.indexed_logical_bytes, expected);
-  assert.deepEqual(storage.directories.map(directory => directory.indexed_logical_bytes).sort((a, b) => a - b), [7, 34, 101]);
-  const top = await call('everything_storage', { root, top: 2 });
-  assert.deepEqual(top.largest_files.map(file => file.indexed_logical_bytes), [101, 23]);
+  const [whole, top] = await search([
+    { root: path.dirname(root), recursive: false, kind: 'folder', query: '^' + path.basename(root) + '$', regex: true, fields: ['size'] },
+    { root, kind: 'file', sort: 'size', ascending: false, count: 2, fields: ['size'] },
+  ]);
+  assert.deepEqual(whole.rows, [[path.basename(root), 'folder', expected]]);
+  assert.deepEqual(top.rows.map(row => row[2]), [101, 23]);
   const badSearch = await c.callTool({ name: 'everything_search', arguments: { requests: [{ root, query: '([', regex: true }, { root: root + '-missing' }] } });
   assert.equal(badSearch.isError, true);
   assert.deepEqual(badSearch.structuredContent.results.map(result => result.error.code), ['INVALID_REGEX', 'ROOT_NOT_FOUND']);
-  const limited = await c.callTool({ name: 'everything_storage', arguments: { root, mode: 'directories', max_entries: 2 } });
-  assert.equal(limited.isError, true);
-  assert.equal(JSON.parse(limited.content[0].text).error.code, 'SCAN_LIMIT');
-  const partial = await call('everything_storage', { root, mode: 'directories', max_entries: 2, allow_partial: true });
-  assert.equal(partial.status, 'partial');
-  assert.equal(partial.ranking_scope, 'scanned_files');
-  assert.equal(partial.scanned_files, 2);
-  assert.equal(partial.size_complete, false);
-  assert.equal(partial.stop_reason, 'max_entries');
-  assert.ok(Array.isArray(partial.directory_lower_bounds));
-  assert.equal(partial.indexed_logical_bytes, first.rows.reduce((sum, row) => sum + row[2], 0));
   await c.readResource({ uri: 'everything://syntax' });
-  console.log(JSON.stringify({ ok: true, transport: status.transport, instance: status.instance, version: status.version, server_version: c.getServerVersion().version, tools, sample_files: samples.length, indexed_logical_bytes: expected, folder_bytes: folders.rows, checks: ['stdio', 'unicode', 'spaces', 'nested_paths', 'file_size', 'modified_time', 'count', 'browse', 'pagination', 'regex', 'batch', 'folder_sizes', 'folder_size_sort_pagination', 'storage', 'largest_files', 'invalid_regex', 'missing_root', 'scan_limit', 'partial_scope', 'resource'] }));
+  console.log(JSON.stringify({ ok: true, transport: status.transport, instance: status.instance, version: status.version, server_version: c.getServerVersion().version, tools, sample_files: samples.length, indexed_logical_bytes: expected, folder_bytes: folders.rows, checks: ['stdio', 'unicode', 'spaces', 'nested_paths', 'file_size', 'modified_time', 'count', 'browse', 'pagination', 'regex', 'batch', 'folder_sizes', 'folder_size_sort_pagination', 'folder_total', 'largest_files', 'invalid_regex', 'missing_root', 'resource'] }));
 } finally {
   await c.close();
   assert.equal(path.dirname(root), path.join(project, '.tmp'));

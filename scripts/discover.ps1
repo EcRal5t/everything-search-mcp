@@ -13,12 +13,4 @@ $instances = @('')
 foreach ($name in [EverythingDiscoveryWindows]::Names()) {
   if ($name -match '^EVERYTHING_TASKBAR_NOTIFICATION_?\((.*)\)$') { $instances += $Matches[1] }
 }
-$dirs = @()
-Get-Process -Name Everything,Everything64 -ErrorAction SilentlyContinue | ForEach-Object {
-  if ($_.Path) { $dirs += [IO.Path]::GetDirectoryName($_.Path) }
-}
-foreach ($key in @('HKCU:\Software\voidtools\Everything','HKLM:\Software\voidtools\Everything','HKLM:\Software\WOW6432Node\voidtools\Everything')) {
-  $v = Get-ItemProperty -LiteralPath $key -ErrorAction SilentlyContinue
-  if ($v.InstallLocation) { $dirs += $v.InstallLocation }
-}
-@{ instances = @($instances | Select-Object -Unique); directories = @($dirs | Select-Object -Unique) } | ConvertTo-Json -Compress
+@{ instances = @($instances | Select-Object -Unique) } | ConvertTo-Json -Compress

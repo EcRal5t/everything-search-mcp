@@ -1,0 +1,11 @@
+{
+  "requests": [
+    {
+      "root": "C:\\",
+      "recursive": false,
+      "kind": "folder",
+      "count": 20,
+      "fields": ["size"]
+    }
+  ]
+}
