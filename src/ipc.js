@@ -22,7 +22,7 @@ export class IpcTransport {
     Object.assign(this, { executable, instance, version, timeoutMs, responseBytes, runner, local: true });
   }
   async call(args, signal, timeoutMs = this.timeoutMs) {
-    const result = await this.runner(this.executable, ['-argv', '-instance', this.instance, ...args], { signal, timeoutMs, maxBytes: this.responseBytes });
+    const result = await this.runner(this.executable, ['-argv', '-code-page', '65001', '-instance', this.instance, ...args], { signal, timeoutMs, maxBytes: this.responseBytes });
     if (result.code !== 0) throw new AgentError(result.code === 8 ? 'INSTANCE_NOT_FOUND' : result.code === 6 ? 'ES_VERSION_UNSUPPORTED' : 'IPC_QUERY_FAILED', `ES IPC request failed (exit ${result.code})`, true, 'Run everything-agent doctor; check the instance, index readiness, helper version and process permissions.');
     return result.stdout;
   }

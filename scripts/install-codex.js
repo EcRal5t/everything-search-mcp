@@ -8,7 +8,7 @@ const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
 const skillSource = path.join(project, '.agents', 'skills', 'everything-search');
 const tomlString = value => JSON.stringify(value);
-const block = `\n[mcp_servers.everything]\ncommand = "node"\nargs = [${tomlString(path.join(project, 'src', 'server.js'))}]\nstartup_timeout_sec = 15\ntool_timeout_sec = 130\n\n`;
+const block = `\n[mcp_servers.everything]\ncommand = ${tomlString(process.execPath)}\nargs = [${tomlString(path.join(project, 'src', 'server.js'))}]\nstartup_timeout_sec = 15\ntool_timeout_sec = 130\n\n`;
 const messages = [];
 
 async function readOrEmpty(filename) {
@@ -40,7 +40,7 @@ async function installConfig(directory, scope) {
 }
 
 try {
-  const mcp = { mcpServers: { everything: { command: 'node', args: [path.join(project, 'src/server.js')] } } };
+  const mcp = { mcpServers: { everything: { command: process.execPath, args: [path.join(project, 'src/server.js')] } } };
   const mcpPath = path.join(project, '.mcp.json');
   const existingMcp = await readOrEmpty(mcpPath);
   if (!existingMcp) await fs.writeFile(mcpPath, JSON.stringify(mcp, null, 2) + '\n', { flag: 'wx' });

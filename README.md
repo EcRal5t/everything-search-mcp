@@ -14,6 +14,7 @@ npm run install:codex
 ```
 
 `install:codex` 把本项目注册到 Codex，并安装搜索技能。已有配置保持原值；已有 HTTP 地址的配置可加上 `EVERYTHING_TRANSPORT=auto`，使 IPC 成为首选、该地址成为回退。重新加载 MCP 连接即可使用新接口。
+安装器记录当前 Node.js 可执行文件的绝对路径，MCP 使用安装时选定的 Node.js 22+ 运行。
 
 其他 MCP 客户端使用绝对路径：
 
@@ -106,6 +107,7 @@ npm run pack:transfer
 ```
 
 `test:parity` 适用于同时启用 IPC 与 HTTP 的环境。
+`test:live` 通过真实 MCP stdio 调用验证中文、空格、多层目录、分页、大小及错误结果；4 个样本文件合计 142 个逻辑字节，验证完成后自动清理样本。IPC 显式使用 UTF-8 代码页，适配 Windows 的不同区域设置。
 
 迁移内容覆盖 `src`、必要脚本、技能、示例、许可证与固定版本 ES。源码仓库中的个人备份和维护脚本由各自目录保留。
 第三方来源和哈希见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 `vendor/es/manifest.json`。

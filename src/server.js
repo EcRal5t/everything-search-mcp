@@ -22,7 +22,7 @@ export function createServer(client = new AgentClient(), options = {}) {
       return {content:[{type:'text',text:JSON.stringify(result)}],...(!textOnly ? {structuredContent:result} : {}),...(failed ? {isError:true} : {})};
     } catch(error) {
       const result=errorResult(error);
-      return {content:[{type:'text',text:JSON.stringify(result)}],...(!textOnly ? {structuredContent:result} : {}),isError:true};
+      return {content:[{type:'text',text:JSON.stringify(result)}],isError:true};
     }
   });
     register('everything_search','Search indexed paths in ordered requests. count:0 counts; recursive:false browses. PCRE via regex:true. Exclude directories with !path:node_modules.',requestsSchema,searchOutputSchema,(a,s)=>compactSearch(client,a,s));

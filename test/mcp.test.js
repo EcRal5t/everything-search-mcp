@@ -5,6 +5,7 @@ import {InMemoryTransport} from '@modelcontextprotocol/sdk/inMemory.js';
 import {createServer} from '../src/server.js';
 import {EverythingClient,configFromEnv} from '../src/everything.js';
 import {AgentClient} from '../src/agent.js';
+import {AgentError} from '../src/schema.js';
 
 const backend=()=>new EverythingClient({...configFromEnv({}),validateRoots:false},async url=>new Response(JSON.stringify({totalResults:1,results:url.searchParams.get('count')==='0'?[]:[{type:'file',name:'x.txt',path:'C:\\Test'}]})));
 async function connect(server){const client=new Client({name:'test',version:'test'});const[a,b]=InMemoryTransport.createLinkedPair();await server.connect(a);await client.connect(b);return client;}
@@ -35,4 +36,16 @@ test('invalid backend configuration still allows MCP discovery and diagnosis',as
  const s=createServer(new AgentClient({EVERYTHING_URL:'file:///bad'}));const c=await connect(s);
  try{assert.equal((await c.listTools()).tools.length,3);const r=await c.callTool({name:'everything_status',arguments:{}});assert.equal(r.isError,true);assert.equal(r.structuredContent.ready,false);assert.equal(r.structuredContent.problems[0].code,'INVALID_CONFIG');}
  finally{await c.close();await s.close();}
+});
+
+test('tool errors remain readable after output schema discovery',async()=>{
+ const client=backend();
+ client.storage=async()=>{throw new AgentError('SCAN_LIMIT','Choose a larger max_entries or allow_partial:true.');};
+ const s=createServer(client);const c=await connect(s);
+ try{
+  await c.listTools();
+  const result=await c.callTool({name:'everything_storage',arguments:{root:'C:\\Test'}});
+  assert.equal(result.isError,true);
+  assert.equal(JSON.parse(result.content[0].text).error.code,'SCAN_LIMIT');
+ }finally{await c.close();await s.close();}
 });

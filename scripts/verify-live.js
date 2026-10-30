@@ -1,25 +1,102 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const c=new Client({name:'live-check',version:'test'});
-await c.connect(new StdioClientTransport({command:process.execPath,args:[path.join(root,'src/cli.js')],stderr:'pipe'}));
-const call=async(name,args={})=>{const r=await c.callTool({name,arguments:args});assert.ok(!r.isError,JSON.stringify(r));return r.structuredContent;};
-try{
- assert.equal((await c.listTools()).tools.length,3);
- const status=await call('everything_status',{verbose:true});assert.equal(status.ready,true);
- const scope=path.join(root,'src');
- const args={root:scope,query:'ext:js',count:2,fields:['size','date_modified']};
- const first=(await call('everything_search',{requests:[args]})).results[0];assert.equal(first.rows.length,2);
- const second=(await call('everything_search',{requests:[{...args,offset:first.next_offset}]})).results[0];
- assert.ok(second.rows.every(r=>!first.rows.some(x=>x[0]===r[0])));
- const batch=(await call('everything_search',{requests:[{root:scope,query:'ext:js',count:0},{root:scope,recursive:false,count:20},{root:scope,query:'^schema\\.js$',regex:true}]})).results;
- assert.equal(batch[0].total,first.total);assert.ok(batch[1].rows.some(r=>r[0]==='schema.js'));assert.deepEqual(batch[2].rows.map(r=>r[0]),['schema.js']);
- const storage=await call('everything_storage',{root:scope,mode:'directories',max_entries:1000});assert.equal(storage.status,'complete');assert.ok(storage.indexed_logical_bytes>0);
- const top=await call('everything_storage',{root:scope,top:2});assert.equal(top.largest_files.length,2);assert.ok(top.largest_files[0].indexed_logical_bytes>=top.largest_files[1].indexed_logical_bytes);
- const missing=await c.callTool({name:'everything_search',arguments:{requests:[{root:scope+'-missing'}]}});assert.equal(missing.isError,true);
- await c.readResource({uri:'everything://syntax'});
- console.log(JSON.stringify({ok:true,transport:status.transport,instance:status.instance,version:status.version,checks:['stdio','three_tools','typed_output','pagination','count','browse','regex','batch','storage','largest_files','missing_root','resource']}));
-}finally{await c.close();}
+
+const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+await fs.mkdir(path.join(project, '.tmp'), { recursive: true });
+const root = await fs.mkdtemp(path.join(project, '.tmp', 'everything-live-'));
+const samples = [['根 文件.txt', 7], ['甲 中文/小 文件.txt', 11], ['甲 中文/多层/深 文件.txt', 23], ['乙 空格/large file.txt', 101]];
+const expected = samples.reduce((sum, [, size]) => sum + size, 0);
+const c = new Client({ name: 'live-check', version: 'unreleased' });
+const call = async (name, args = {}) => {
+  const result = await c.callTool({ name, arguments: args });
+  assert.ok(!result.isError, JSON.stringify(result));
+  assert.deepEqual(JSON.parse(result.content[0].text), result.structuredContent);
+  return result.structuredContent;
+};
+const search = async requests => (await call('everything_search', { requests })).results;
+try {
+  for (const [name, size] of samples) {
+    const filename = path.join(root, name);
+    await fs.mkdir(path.dirname(filename), { recursive: true });
+    await fs.writeFile(filename, Buffer.alloc(size, 65));
+  }
+  await fs.mkdir(path.join(root, '空目录'));
+  await c.connect(new StdioClientTransport({ command: process.execPath, args: [path.join(project, 'src/cli.js')], stderr: 'pipe' }));
+  assert.equal(c.getServerVersion().version, 'unreleased');
+  const tools = (await c.listTools()).tools.map(t => t.name).sort();
+  assert.deepEqual(tools, ['everything_search', 'everything_status', 'everything_storage']);
+  const status = await call('everything_status', { verbose: true });
+  assert.equal(status.ready, true);
+  // Wait for the live index to observe the new fixture and its size metadata.
+  const deadline = Date.now() + 15000;
+  let files;
+  do {
+    [files] = await search([{ root, kind: 'file', fields: ['size', 'date_modified'] }]);
+    if (files.rows?.length === samples.length && files.rows.every(row => samples.some(([name, size]) => name === row[0] && size === row[2]))) break;
+    await new Promise(resolve => setTimeout(resolve, 200));
+  } while (Date.now() < deadline);
+  assert.equal(files.total, samples.length);
+  assert.deepEqual(files.rows.map(row => [row[0], row[2]]).sort(), [...samples].sort());
+  assert.ok(files.rows.every(row => /^\d{4}-.*Z$/.test(row[3])));
+  assert.equal(files.rows.reduce((sum, row) => sum + row[2], 0), expected);
+  const [count, browse, regex, chinese, space] = await search([
+    { root, kind: 'file', count: 0 }, { root, recursive: false },
+    { root, query: '^小 文件\\.txt$', regex: true }, { root, query: '深' }, { root, query: '"large file"' },
+  ]);
+  assert.equal(count.total, samples.length);
+  assert.deepEqual(browse.rows.map(row => row[0]).sort(), ['根 文件.txt', '甲 中文', '乙 空格', '空目录'].sort());
+  assert.deepEqual(regex.rows.map(row => row[0]), ['甲 中文/小 文件.txt']);
+  assert.deepEqual(chinese.rows.map(row => row[0]), ['甲 中文/多层/深 文件.txt']);
+  assert.deepEqual(space.rows.map(row => row[0]), ['乙 空格/large file.txt']);
+  const pageArgs = { root, kind: 'file', count: 2, fields: ['size'] };
+  const [first] = await search([pageArgs]);
+  assert.equal(first.next_offset, 2);
+  const [second] = await search([{ ...pageArgs, offset: first.next_offset }]);
+  assert.equal(second.next_offset, null);
+  assert.deepEqual([...first.rows, ...second.rows].map(row => row[0]), files.rows.map(row => row[0]));
+  const folderArgs = { root, recursive: false, kind: 'folder', fields: ['size'], sort: 'size', ascending: false };
+  const [folders, single, a, b] = await search([
+    folderArgs, { ...folderArgs, query: '^甲 中文$', regex: true },
+    { root: path.join(root, '甲 中文'), kind: 'file', fields: ['size'] },
+    { root: path.join(root, '乙 空格'), kind: 'file', fields: ['size'] },
+  ]);
+  assert.equal(folders.size_basis, 'indexed_logical');
+  assert.deepEqual(folders.rows, [['乙 空格', 'folder', 101], ['甲 中文', 'folder', 34], ['空目录', 'folder', 0]]);
+  assert.deepEqual(single.rows, [['甲 中文', 'folder', 34]]);
+  assert.equal(a.rows.reduce((sum, row) => sum + row[2], 0), 34);
+  assert.equal(b.rows.reduce((sum, row) => sum + row[2], 0), 101);
+  const [largestFolder, nextFolder] = await search([{ ...folderArgs, count: 1 }, { ...folderArgs, count: 1, offset: 1 }]);
+  assert.deepEqual(largestFolder.rows, folders.rows.slice(0, 1));
+  assert.deepEqual(nextFolder.rows, folders.rows.slice(1, 2));
+  const storage = await call('everything_storage', { root, mode: 'directories', depth: 1 });
+  assert.equal(storage.status, 'complete');
+  assert.equal(storage.size_complete, true);
+  assert.equal(storage.indexed_logical_bytes, expected);
+  assert.deepEqual(storage.directories.map(directory => directory.indexed_logical_bytes).sort((a, b) => a - b), [7, 34, 101]);
+  const top = await call('everything_storage', { root, top: 2 });
+  assert.deepEqual(top.largest_files.map(file => file.indexed_logical_bytes), [101, 23]);
+  const badSearch = await c.callTool({ name: 'everything_search', arguments: { requests: [{ root, query: '([', regex: true }, { root: root + '-missing' }] } });
+  assert.equal(badSearch.isError, true);
+  assert.deepEqual(badSearch.structuredContent.results.map(result => result.error.code), ['INVALID_REGEX', 'ROOT_NOT_FOUND']);
+  const limited = await c.callTool({ name: 'everything_storage', arguments: { root, mode: 'directories', max_entries: 2 } });
+  assert.equal(limited.isError, true);
+  assert.equal(JSON.parse(limited.content[0].text).error.code, 'SCAN_LIMIT');
+  const partial = await call('everything_storage', { root, mode: 'directories', max_entries: 2, allow_partial: true });
+  assert.equal(partial.status, 'partial');
+  assert.equal(partial.ranking_scope, 'scanned_files');
+  assert.equal(partial.scanned_files, 2);
+  assert.equal(partial.size_complete, false);
+  assert.equal(partial.stop_reason, 'max_entries');
+  assert.ok(Array.isArray(partial.directory_lower_bounds));
+  assert.equal(partial.indexed_logical_bytes, first.rows.reduce((sum, row) => sum + row[2], 0));
+  await c.readResource({ uri: 'everything://syntax' });
+  console.log(JSON.stringify({ ok: true, transport: status.transport, instance: status.instance, version: status.version, server_version: c.getServerVersion().version, tools, sample_files: samples.length, indexed_logical_bytes: expected, folder_bytes: folders.rows, checks: ['stdio', 'unicode', 'spaces', 'nested_paths', 'file_size', 'modified_time', 'count', 'browse', 'pagination', 'regex', 'batch', 'folder_sizes', 'folder_size_sort_pagination', 'storage', 'largest_files', 'invalid_regex', 'missing_root', 'scan_limit', 'partial_scope', 'resource'] }));
+} finally {
+  await c.close();
+  assert.equal(path.dirname(root), path.join(project, '.tmp'));
+  await fs.rm(root, { recursive: true, force: true });
+}

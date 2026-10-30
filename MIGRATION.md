@@ -33,4 +33,8 @@ npm run test:live
 npm run check:transfer
 ```
 
+`test:live` 会创建中文名、空格名和多层目录样本，通过三个 MCP 工具验证搜索与容量行为，并核对 142 字节的文件总长度。Everything 1.4 的目录大小以文件求和核对，错误结果通过 MCP 文本内容中的 JSON 读取。
+
+同机存在多个 Node.js 版本时，使用 Node.js 22+ 执行安装器；生成的 Codex 配置使用该可执行文件的绝对路径。
+
 `npm run pack:transfer` 从已提交的 Git 内容生成迁移 ZIP，包含该提交对应的完整 Git 仓库。目标电脑可以继续使用 Git 提交后续修改。
