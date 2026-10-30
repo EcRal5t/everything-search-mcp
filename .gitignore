@@ -6,11 +6,3 @@ installation-backups/
 backups/
 artifacts/
 *.tgz
-scripts/*
-!scripts/discover.ps1
-!scripts/install-codex.js
-!scripts/verify-live.js
-!scripts/verify-parity.js
-!scripts/verify-transfer.js
-!scripts/create-transfer.js
-!scripts/zip-transfer.ps1

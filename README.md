@@ -85,18 +85,17 @@ IPC 提供上述全部字段和排序。HTTP 提供 size、date_modified 字段�
 
 最大文件和文件夹比较通过 everything_search 完成。输出同时提供结构化数据和 JSON 文本。
 
-## CLI、验证与迁移
+## 开发与验证
 
 CLI 提供 mcp、doctor、search、help。search 使用与 MCP 相同的 requests 格式，支持 JSON、--input file.json 和 --stdin；doctor 输出只读诊断。stdout 输出一个 JSON 对象，错误退出码为 1。
 
 ```powershell
 npm test
 npm run test:live
-npm run test:parity
-npm run check:transfer
-npm run pack:transfer
 ```
 
-test:live 通过真实 MCP stdio 验证中文、空格、多层目录、分页和逻辑大小，4 个样本文件合计 142 字节，完成后自动清理样本。IPC 显式使用 UTF-8 代码页，适配 Windows 区域设置。test:parity 需要将 EVERYTHING_TEST_HTTP_URL 设置为同一索引的已运行 HTTP 服务，比较 IPC 与 HTTP 查询结果。
+test 保留查询范围、输出分页、精确求和、超时、IPC 编码与实例选择、1.4/1.5 目录大小和 MCP 参数/错误边界的关键回归。
 
-pack:transfer 从已提交内容生成 artifacts/everything-agent-transfer.zip，包含源码、Git 仓库、锁文件和四种架构的固定版本 ES。迁移步骤见 [MIGRATION.md](MIGRATION.md)；第三方来源和哈希见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 vendor/es/manifest.json。
+test:live 使用真实 MCP stdio，在临时目录中验证中文、空格、多层路径、计数、分页、元数据和逻辑大小。4 个样本文件共 142 字节，完成后自动清理。设置 EVERYTHING_TEST_HTTP_URL 为同一索引的已运行 HTTP 服务后，同次验证会比较 IPC 与 HTTP 结果。
+
+发布步骤见 [PUBLISHING.md](PUBLISHING.md)。第三方来源、授权和哈希见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 vendor/es/manifest.json。

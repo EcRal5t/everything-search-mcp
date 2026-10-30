@@ -4,6 +4,7 @@ import {IpcTransport,parseCSV} from '../src/ipc.js';
 import {discoverIpc} from '../src/discovery.js';
 import {configFromEnv} from '../src/everything.js';
 import {AgentError} from '../src/schema.js';
+import {AgentClient} from '../src/agent.js';
 
 test('IPC uses literal argv after the switch boundary and preserves integer precision',async()=>{
  const calls=[];
@@ -19,6 +20,17 @@ test('IPC uses literal argv after the switch boundary and preserves integer prec
  assert.equal(r.results[0].date_created,'133801632000000000');assert.equal(r.results[0].attributes,'32');assert.equal(r.results[0].run_count,'7');
  assert.equal(calls[0][calls[0].indexOf('-sort')+1],'date-created-ascending');
  assert.deepEqual(parseCSV('a,b\r\n"x,y","z""w"\r\n'),[['a','b'],['x,y','z"w']]);
+});
+test('IPC folder sizes use file sums on 1.4 and indexed values on 1.5',async()=>{
+ for(const version of ['1.4.1.1024','1.5.0.1409']){
+  const c=new AgentClient({}, {inspect:async()=>({instances:['']}),discoverIpc:async()=>({
+   info:{transport:'ipc',instance:'',version,local:false},transport:{
+    request:async()=>({totalResults:1,results:[{name:'folder',path:'C:\\Test',type:'folder',size:'42'}]}),
+    directorySize:async()=>'34',
+   },
+  })});
+  assert.deepEqual((await c.search({fields:['size']})).rows,[['C:/Test/folder','folder',version.startsWith('1.4.')?34:42]]);
+ }
 });
 test('discovery selects a custom instance and surfaces multiple indexes',async()=>{
  const config=configFromEnv({});

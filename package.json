@@ -11,10 +11,7 @@
     "cli": "node src/cli.js",
     "test": "node --test test/*.test.js",
     "test:live": "node scripts/verify-live.js",
-    "install:codex": "node scripts/install-codex.js",
-    "test:parity": "node scripts/verify-parity.js",
-    "check:transfer": "node scripts/verify-transfer.js",
-    "pack:transfer": "node scripts/create-transfer.js"
+    "install:codex": "node scripts/install-codex.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
@@ -29,7 +26,6 @@
     "src/",
     "vendor/es/",
     "README.md",
-    "MIGRATION.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "scripts/discover.ps1",
