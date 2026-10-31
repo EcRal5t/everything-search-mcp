@@ -2,7 +2,22 @@
   "name": "everything-agent",
   "private": true,
   "type": "module",
-  "description": "Compact structured Everything search for AI agents over MCP and CLI",
+  "description": "Fast file search on Windows with Everything, for MCP clients and the command line",
+  "mcpName": "io.github.EcRal5t/everything-search-mcp",
+  "author": "EcRal5t",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EcRal5t/everything-search-mcp.git"
+  },
+  "homepage": "https://github.com/EcRal5t/everything-search-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/EcRal5t/everything-search-mcp/issues"
+  },
+  "keywords": ["mcp", "everything", "file-search", "windows", "voidtools"],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "engines": {
     "node": ">=22"
   },
@@ -26,6 +41,7 @@
     "src/",
     "vendor/es/",
     "README.md",
+    "README.zh-CN.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "scripts/discover.ps1",

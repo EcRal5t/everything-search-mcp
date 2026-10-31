@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.EcRal5t/everything-search-mcp",
+  "title": "Everything Search MCP",
+  "description": "Fast file search on Windows with Everything. Find files, browse folders, and compare sizes.",
+  "repository": {
+    "url": "https://github.com/EcRal5t/everything-search-mcp",
+    "source": "github"
+  },
+  "version": "unreleased",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "everything-agent",
+      "version": "unreleased",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

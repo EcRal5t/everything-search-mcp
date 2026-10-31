@@ -1,14 +1,16 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
 import { AgentClient } from './agent.js';
 import { syntax } from './everything.js';
 import { compactSearch } from './compact.js';
 import { errorResult, requestsSchema, diagnosticSchema, searchOutputSchema, statusOutputSchema } from './schema.js';
 
 export const instructions = 'Search the selected live index. Combine base and relative row path for an absolute path; columns label cells. count:0 counts; add kind:file, fields:[size] for total file bytes. recursive:false lists children. Page with next_offset and unchanged filters. Use rg for content. File/folder sizes use indexed logical bytes.';
+const { name, version = 'unreleased' } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 export function createServer(client = new AgentClient()) {
-  const server = new McpServer({ name: 'everything-agent', version: 'unreleased' }, { instructions });
+  const server = new McpServer({ name, version }, { instructions });
   const register = (name, description, inputSchema, outputSchema, handler) => server.registerTool(name, {
     description, inputSchema, outputSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
