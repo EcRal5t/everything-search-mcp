@@ -16,7 +16,7 @@
 
 ## 安装与配置
 
-Windows 下按以下示例，通过 `cmd.exe` 启动 `npx`。选择对应客户端，添加配置后重新加载 MCP 连接。
+Windows 下按以下示例，通过 `cmd.exe` 启动 `npx`。选择对应客户端，添加配置后重新加载 MCP 连接。（DeepSeek Harness 例外：它直接 spawn 命令，用裸 `npx` 即可，见下方小节。）
 
 [![安装到 Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=everything&config=eyJjb21tYW5kIjoiY21kLmV4ZSIsImFyZ3MiOlsiL2QiLCIvYyIsIm5weCIsIi15IiwiZXZlcnl0aGluZy1tY3Atc2VydmVyIl19)
 
@@ -61,6 +61,32 @@ codex mcp add everything -- cmd.exe /d /c npx -y everything-mcp-server
 ```powershell
 opencode mcp add
 ```
+
+</details>
+
+<details>
+<summary>DeepSeek Harness</summary>
+
+安装配置包（通过 DSH 内置的 MCP 客户端挂载，不改动其他东西）：
+
+```powershell
+dsh plugin --profile <profile> add github:EcRal5t/everything-search-mcp#path:/plugins/dsh-everything-mcp
+```
+
+重启该 profile 后，工具以 `mcp__everything__everything_search` 和 `mcp__everything__everything_status` 出现。也可以手工在 profile 的 `cordis.patch.yml` 里加：
+
+```yaml
+- insert:
+    - id: mcp-everything
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: everything
+        transport: stdio
+        command: npx
+        args: ['-y', 'everything-mcp-server']
+```
+
+DSH 直接 spawn 命令，不需要 `cmd.exe` 包装。配置包本身见 [`plugins/dsh-everything-mcp`](plugins/dsh-everything-mcp)。
 
 </details>
 

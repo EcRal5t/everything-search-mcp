@@ -16,7 +16,7 @@ The ES helper is included. The server automatically checks the default Everythin
 
 ## Installation & Configuration
 
-On Windows, launch `npx` through `cmd.exe` as shown below. Choose your client, add the configuration, then reload its MCP connections.
+On Windows, launch `npx` through `cmd.exe` as shown below. Choose your client, add the configuration, then reload its MCP connections. (DeepSeek Harness is the exception: it spawns the command directly, so plain `npx` works — see its section below.)
 
 [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=everything&config=eyJjb21tYW5kIjoiY21kLmV4ZSIsImFyZ3MiOlsiL2QiLCIvYyIsIm5weCIsIi15IiwiZXZlcnl0aGluZy1tY3Atc2VydmVyIl19)
 
@@ -61,6 +61,32 @@ Or run the OpenCode setup wizard and enter the command above:
 ```powershell
 opencode mcp add
 ```
+
+</details>
+
+<details>
+<summary>DeepSeek Harness</summary>
+
+Install the bundle — it adds the server through DSH's built-in MCP client and changes nothing else:
+
+```powershell
+dsh plugin --profile <profile> add github:EcRal5t/everything-search-mcp#path:/plugins/dsh-everything-mcp
+```
+
+Restart the profile. The tools appear as `mcp__everything__everything_search` and `mcp__everything__everything_status`. To wire it by hand instead, add this row to the profile's `cordis.patch.yml`:
+
+```yaml
+- insert:
+    - id: mcp-everything
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: everything
+        transport: stdio
+        command: npx
+        args: ['-y', 'everything-mcp-server']
+```
+
+DSH spawns commands directly, so no `cmd.exe` wrapper is needed. See [`plugins/dsh-everything-mcp`](plugins/dsh-everything-mcp) for the bundle itself.
 
 </details>
 

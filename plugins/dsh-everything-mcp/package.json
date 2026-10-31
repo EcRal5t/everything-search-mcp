@@ -1,0 +1,47 @@
+{
+  "name": "dsh-everything-mcp",
+  "version": "0.1.0",
+  "description": "Config-only DeepSeek Harness bundle that mounts the Everything (voidtools) search MCP server as mcp__everything__* tools. No plugin code.",
+  "license": "MIT",
+  "author": {
+    "name": "EcRal5t",
+    "url": "https://github.com/EcRal5t"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EcRal5t/everything-search-mcp.git",
+    "directory": "plugins/dsh-everything-mcp"
+  },
+  "homepage": "https://github.com/EcRal5t/everything-search-mcp/tree/main/plugins/dsh-everything-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/EcRal5t/everything-search-mcp/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "mcp",
+    "everything",
+    "voidtools",
+    "file-search",
+    "windows",
+    "stdio"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.0-rc.1 <0.3.0-0"
+  },
+  "files": [
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
