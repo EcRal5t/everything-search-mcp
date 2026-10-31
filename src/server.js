@@ -7,7 +7,7 @@ import { syntax } from './everything.js';
 import { compactSearch } from './compact.js';
 import { errorResult, requestsSchema, diagnosticSchema, searchOutputSchema, statusOutputSchema } from './schema.js';
 
-export const instructions = 'Fast file search on Windows using Everything. Returns compact matrix results (base directory, column names, row arrays). Combine base with relative row paths for full paths. Use count:0 to count matches. Use recursive:false to list direct folder children.';
+export const instructions = 'Search the selected Everything index. columns label row cells. When base is present, join it and relative row paths with a single / for absolute paths. Continue with next_offset and the same filters. Sizes are indexed logical bytes.';
 const { name, version = 'unreleased' } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 export function createServer(client = new AgentClient()) {
@@ -25,7 +25,7 @@ export function createServer(client = new AgentClient()) {
     }
   });
 
-  register('everything_search', 'Search indexed files and folders in 1–8 requests. recursive:false lists direct children. Use count:0, kind:"file", fields:["size"] to sum matched file bytes.', requestsSchema, searchOutputSchema, (args, signal) => compactSearch(client, args, signal));
+  register('everything_search', 'Find file/folder paths and indexed metadata across drives or within root. Use workspace search or rg for file contents. Submit 1–8 requests; recursive:false browses; count:0 counts; add kind:"file", fields:["size"] to sum matched bytes.', requestsSchema, searchOutputSchema, (args, signal) => compactSearch(client, args, signal));
   register('everything_status', 'Check connection status, selected instance, version, and index readiness.', diagnosticSchema, statusOutputSchema, (args, signal) => client.status(signal, args.verbose));
   server.registerResource('everything-syntax', 'everything://syntax', { description: 'Query syntax and result semantics', mimeType: 'application/json' }, async uri => ({ contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(syntax) }] }));
   return server;

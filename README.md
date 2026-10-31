@@ -1,17 +1,10 @@
-# everything-mcp-server
+# Everything Search MCP
 
 [简体中文](README.zh-CN.md)
 
-A high-performance Windows file search MCP server powered by [voidtools Everything](https://www.voidtools.com/). Enables AI assistants to search millions of indexed files and directories in milliseconds.
+Search Windows files from your AI assistant using [Everything](https://www.voidtools.com/).
 
-## Features
-
-- **Instant Search**: Millisecond file and path lookups across all indexed NTFS/ReFS volumes.
-- **Token-Efficient Compact Output**: Matrix format (`base` + `columns` + `rows`) designed to minimize token usage for LLMs.
-- **Flexible Queries**: Search file names, paths, and indexed metadata using [Everything search syntax](https://www.voidtools.com/support/everything/searching/), wildcards, boolean operators, filters, and regular expressions.
-- **Batch Queries**: Submit 1–8 queries per call through the `requests` array.
-- **Folder & Size Analytics**: Directory size calculation, largest file discovery, and instant item counting.
-- **Dual Transport**: Local IPC via bundled `es.exe`, with optional HTTP transport via `EVERYTHING_URL`.
+Find files across indexed drives by name, path, type, size, or date. Browse folders, compare their sizes, and get counts or total file sizes in a single request. Searches use Everything's existing index, with paginated results and optional metadata.
 
 ## Prerequisites
 
@@ -19,25 +12,35 @@ A high-performance Windows file search MCP server powered by [voidtools Everythi
 - **Node.js**: v22.0.0 or newer
 - **Everything**: [Everything](https://www.voidtools.com/) 1.4.1+ or 1.5 Alpha installed and running.
 
+The ES helper is included. The server automatically checks the default Everything instance, `1.5a`, and `1.5` and connects through local IPC.
+
 ## Installation & Configuration
 
-### OpenAI Codex
+On Windows, launch `npx` through `cmd.exe` as shown below. Choose your client, add the configuration, then reload its MCP connections.
+
+[![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=everything&config=eyJjb21tYW5kIjoiY21kLmV4ZSIsImFyZ3MiOlsiL2QiLCIvYyIsIm5weCIsIi15IiwiZXZlcnl0aGluZy1tY3Atc2VydmVyIl19)
+
+<details>
+<summary>OpenAI Codex</summary>
 
 Add to your Codex configuration file (`%USERPROFILE%/.codex/config.toml` or project-level `.codex/config.toml`):
 
 ```toml
 [mcp_servers.everything]
-command = "npx"
-args = ["-y", "everything-mcp-server"]
+command = "cmd.exe"
+args = ["/d", "/c", "npx", "-y", "everything-mcp-server"]
 ```
 
 Or add via Codex CLI:
 
 ```powershell
-codex mcp add everything -- npx -y everything-mcp-server
+codex mcp add everything -- cmd.exe /d /c npx -y everything-mcp-server
 ```
 
-### OpenCode
+</details>
+
+<details>
+<summary>OpenCode</summary>
 
 Add to your project's `opencode.json`:
 
@@ -47,7 +50,7 @@ Add to your project's `opencode.json`:
   "mcp": {
     "everything": {
       "type": "local",
-      "command": ["npx", "-y", "everything-mcp-server"]
+      "command": ["cmd.exe", "/d", "/c", "npx", "-y", "everything-mcp-server"]
     }
   }
 }
@@ -59,7 +62,10 @@ Or run the OpenCode setup wizard and enter the command above:
 opencode mcp add
 ```
 
-### Claude Desktop & Generic MCP Clients
+</details>
+
+<details>
+<summary>Claude Desktop and other MCP clients</summary>
 
 Add to your MCP client configuration (e.g. `claude_desktop_config.json`):
 
@@ -67,16 +73,75 @@ Add to your MCP client configuration (e.g. `claude_desktop_config.json`):
 {
   "mcpServers": {
     "everything": {
-      "command": "npx",
-      "args": ["-y", "everything-mcp-server"]
+      "command": "cmd.exe",
+      "args": ["/d", "/c", "npx", "-y", "everything-mcp-server"]
     }
   }
 }
 ```
 
+VS Code uses `servers` as the top-level key.
+
+</details>
+
+## What to ask
+
+After connecting, ask your assistant to use Everything for tasks such as:
+
+- **Locate a missing file:** “Find quarterly-report PDFs modified last month across my indexed drives.”
+- **Investigate large files:** “Show the ten largest log files or archives over 1 GB on C:, including their paths and sizes.”
+- **Find project artifacts:** “Find folders named node_modules or target under D:/Projects and tell me how many there are.”
+- **Compare folder sizes:** “Compare the sizes of the folders directly inside D:/Projects.”
+
+## Tools
+
+Both tools are read-only.
+
+| Tool | Purpose |
+| --- | --- |
+| `everything_search` | Find paths, browse folders, count matches, and retrieve sizes or other indexed metadata. |
+| `everything_status` | Check the connection, selected Everything instance, and version. |
+
+## Connection settings
+
+Default settings cover common local installations. Use `EVERYTHING_INSTANCE` for a custom instance name. Setting `EVERYTHING_URL` selects an Everything HTTP service; credentials go in `EVERYTHING_USERNAME` and `EVERYTHING_PASSWORD` when needed.
+
+<details>
+<summary>All environment variables</summary>
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `EVERYTHING_INSTANCE` | auto-detect | Probes the default instance, `1.5a`, and `1.5`. Set this for a custom instance; `""` selects the default instance. |
+| `EVERYTHING_URL` | `""` | Everything HTTP server URL (e.g. `http://127.0.0.1:17603/`). When set, uses HTTP transport instead of IPC. |
+| `EVERYTHING_USERNAME` | `""` | Basic auth username for HTTP server. |
+| `EVERYTHING_PASSWORD` | `""` | Basic auth password for HTTP server. |
+| `EVERYTHING_MAX_RESULTS` | `1000` | Row cap for each query and the whole batch (1–1000). |
+| `EVERYTHING_OUTPUT_BYTES` | `16384` | Maximum output size budget per tool call (4096–65536). |
+| `EVERYTHING_TIMEOUT_MS` | `15000` | Query timeout in milliseconds (100–120000). |
+| `EVERYTHING_ES_PATH` | bundled | Custom path to `es.exe`. |
+
+</details>
+
+## CLI & Diagnostics
+
+Test your Everything installation and backend connection:
+
+```powershell
+npx -y everything-mcp-server doctor
+```
+
+Run queries from the command line:
+
+```powershell
+npx -y everything-mcp-server search '{"requests": [{"query": "ext:pdf", "count": 5}]}'
+```
+
 ---
 
-## Tool Reference
+## Tool reference
+
+<details>
+<summary>Parameters and result format</summary>
 
 ### `everything_search`
 
@@ -107,7 +172,8 @@ IPC provides all listed fields and sorts. HTTP sorts by name, path, size, or mod
 
 **Output Format:**
 
-Results use a token-saving matrix structure:
+Results label columns once, followed by row arrays:
+
 ```json
 {
   "results": [
@@ -133,40 +199,10 @@ File and folder sizes use logical byte counts from Everything's index.
 Check backend connectivity, Everything version, selected instance, and index status.
 
 **Parameters:**
+
 - `verbose` (boolean, default `false`): Include total indexed items and limits.
 
----
-
-## Environment Variables
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `EVERYTHING_INSTANCE` | auto-detect | Probes the default instance, `1.5a`, and `1.5`. Set this for a custom instance; `""` selects the default instance. |
-| `EVERYTHING_URL` | `""` | Everything HTTP server URL (e.g. `http://127.0.0.1:17603/`). When set, uses HTTP transport instead of IPC. |
-| `EVERYTHING_USERNAME` | `""` | Basic auth username for HTTP server. |
-| `EVERYTHING_PASSWORD` | `""` | Basic auth password for HTTP server. |
-| `EVERYTHING_MAX_RESULTS` | `1000` | Row cap for each query and the whole batch (1–1000). |
-| `EVERYTHING_OUTPUT_BYTES` | `16384` | Maximum output size budget per tool call (4096–65536). |
-| `EVERYTHING_TIMEOUT_MS` | `15000` | Query timeout in milliseconds (100–120000). |
-| `EVERYTHING_ES_PATH` | bundled | Custom path to `es.exe`. |
-
----
-
-## CLI & Diagnostics
-
-Test your Everything installation and backend connection:
-
-```powershell
-npx -y everything-mcp-server doctor
-```
-
-Run queries from the command line:
-
-```powershell
-npx -y everything-mcp-server search '{"requests": [{"query": "ext:pdf", "count": 5}]}'
-```
-
----
+</details>
 
 ## Local Development
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const requestSchema = z.object({
-  query: z.string().max(8192).default('').describe('Everything path or metadata query (e.g. *.pdf, size:>10mb).'),
+  query: z.string().max(8192).default('').describe('Everything filename, path or indexed metadata query (e.g. *.pdf, size:>10mb).'),
   root: z.string().max(1024).optional().describe('Absolute Windows directory or drive path; omitted = global search.'),
   recursive: z.boolean().default(true).describe('When root is set: search all descendants (true) or direct children only (false).'),
   kind: z.enum(['any', 'file', 'folder']).default('any').describe('Filter by entry type (any, file, folder).'),

@@ -1,17 +1,10 @@
-# everything-mcp-server
+# Everything Search MCP
 
 [English](README.md)
 
-基于 [voidtools Everything](https://www.voidtools.com/) 的高性能 Windows 本地文件搜索 MCP 服务端。让 AI 助手在数毫秒内检索系统中的数百万个文件与目录。
+让 AI 助手通过 [Everything](https://www.voidtools.com/) 查找 Windows 上的文件。
 
-## 特性
-
-- **毫秒级搜索**：基于 Everything 建立的 NTFS/ReFS 索引，瞬间完成文件名、路径和元数据检索。
-- **高 Token 效益输出**：采用紧凑矩阵结构（`base` + `columns` + `rows`），大幅节省大语言模型的上下文 Token。
-- **丰富的查询语法**：使用 [Everything 搜索语法](https://www.voidtools.com/support/everything/searching/) 查询文件名、路径与索引元数据，支持通配符、布尔组合、过滤条件及正则表达式。
-- **批量查询**：通过 `requests` 数组，每次提交 1–8 项查询。
-- **目录与大小统计**：支持目录直接子项浏览、文件夹大小求和以及最大文件排序。
-- **双传输通道**：默认通过内置的 `es.exe` 使用本机 IPC 通信，也可用 `EVERYTHING_URL` 指定 HTTP 服务。
+按名称、路径、类型、大小或日期搜索各个已索引的驱动器，也能浏览目录、比较文件夹大小，或一次取得匹配数量和文件总大小。搜索使用 Everything 已有的索引，结果支持分页，并可按需附带文件信息。
 
 ## 环境要求
 
@@ -19,25 +12,35 @@
 - **Node.js**：v22.0.0 或更新版本
 - **Everything**：已安装并运行 [Everything](https://www.voidtools.com/) 1.4.1+ 或 1.5 Alpha。
 
+包内已附带 ES 工具。服务会自动探测默认实例、`1.5a` 和 `1.5`，通过本机 IPC 连接。
+
 ## 安装与配置
 
-### OpenAI Codex
+Windows 下按以下示例，通过 `cmd.exe` 启动 `npx`。选择对应客户端，添加配置后重新加载 MCP 连接。
+
+[![安装到 Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=everything&config=eyJjb21tYW5kIjoiY21kLmV4ZSIsImFyZ3MiOlsiL2QiLCIvYyIsIm5weCIsIi15IiwiZXZlcnl0aGluZy1tY3Atc2VydmVyIl19)
+
+<details>
+<summary>OpenAI Codex</summary>
 
 在 Codex 配置文件（用户全局 `%USERPROFILE%/.codex/config.toml` 或项目 `.codex/config.toml`）中添加：
 
 ```toml
 [mcp_servers.everything]
-command = "npx"
-args = ["-y", "everything-mcp-server"]
+command = "cmd.exe"
+args = ["/d", "/c", "npx", "-y", "everything-mcp-server"]
 ```
 
 或通过 Codex CLI 命令行添加：
 
 ```powershell
-codex mcp add everything -- npx -y everything-mcp-server
+codex mcp add everything -- cmd.exe /d /c npx -y everything-mcp-server
 ```
 
-### OpenCode
+</details>
+
+<details>
+<summary>OpenCode</summary>
 
 在项目的 `opencode.json` 中添加：
 
@@ -47,7 +50,7 @@ codex mcp add everything -- npx -y everything-mcp-server
   "mcp": {
     "everything": {
       "type": "local",
-      "command": ["npx", "-y", "everything-mcp-server"]
+      "command": ["cmd.exe", "/d", "/c", "npx", "-y", "everything-mcp-server"]
     }
   }
 }
@@ -59,7 +62,10 @@ codex mcp add everything -- npx -y everything-mcp-server
 opencode mcp add
 ```
 
-### Claude Desktop 及通用 MCP 客户端
+</details>
+
+<details>
+<summary>Claude Desktop 及其他 MCP 客户端</summary>
 
 在客户端配置（例如 `claude_desktop_config.json`）中添加：
 
@@ -67,16 +73,75 @@ opencode mcp add
 {
   "mcpServers": {
     "everything": {
-      "command": "npx",
-      "args": ["-y", "everything-mcp-server"]
+      "command": "cmd.exe",
+      "args": ["/d", "/c", "npx", "-y", "everything-mcp-server"]
     }
   }
 }
 ```
 
+VS Code 的顶层字段使用 `servers`。
+
+</details>
+
+## 使用示例
+
+连接后，可以让助手使用 Everything 完成这些任务：
+
+- **找回文件**：“在各个已索引的驱动器上，找出上个月修改过、文件名包含 quarterly-report 的 PDF。”
+- **排查大文件**：“列出 C 盘超过 1 GB 的日志和压缩包中最大的十个，附上路径和大小。”
+- **查找工程产物**：“查找 D:/Projects 下名为 node_modules 或 target 的文件夹，并统计数量。”
+- **比较目录大小**：“比较 D:/Projects 下各个直接子文件夹的大小。”
+
+## 工具
+
+两个工具均为只读。
+
+| 工具 | 用途 |
+| --- | --- |
+| `everything_search` | 查找路径、浏览目录、统计数量，以及取得大小或其他索引元数据。 |
+| `everything_status` | 查看连接状态、所选 Everything 实例和版本。 |
+
+## 连接设置
+
+常见本机安装使用默认设置即可。自定义实例通过 `EVERYTHING_INSTANCE` 指定；设置 `EVERYTHING_URL` 后会连接指定的 Everything HTTP 服务。需要认证时，使用 `EVERYTHING_USERNAME` 和 `EVERYTHING_PASSWORD` 提供账号密码。
+
+<details>
+<summary>全部环境变量</summary>
+
+| 环境变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `EVERYTHING_INSTANCE` | 自动探测 | 自动探测默认实例、`1.5a` 和 `1.5`。自定义实例通过此项指定；`""` 选择默认实例。 |
+| `EVERYTHING_URL` | `""` | Everything HTTP 服务地址（例如 `http://127.0.0.1:17603/`）。设置后优先使用 HTTP 通道。 |
+| `EVERYTHING_USERNAME` | `""` | HTTP 服务的基础认证用户名。 |
+| `EVERYTHING_PASSWORD` | `""` | HTTP 服务的基础认证密码。 |
+| `EVERYTHING_MAX_RESULTS` | `1000` | 每项查询及整批查询的总行数上限（1–1000）。 |
+| `EVERYTHING_OUTPUT_BYTES` | `16384` | 单次工具调用的输出字节上限预算（4096–65536）。 |
+| `EVERYTHING_TIMEOUT_MS` | `15000` | 查询超时毫秒数（100–120000）。 |
+| `EVERYTHING_ES_PATH` | 内置路径 | 自定义 `es.exe` 可执行文件路径。 |
+
+</details>
+
+## 命令行与连接诊断
+
+检查当前环境中的 Everything 连接状态：
+
+```powershell
+npx -y everything-mcp-server doctor
+```
+
+直接在命令行运行查询：
+
+```powershell
+npx -y everything-mcp-server search '{"requests": [{"query": "ext:pdf", "count": 5}]}'
+```
+
 ---
 
-## 工具列表
+## 工具参考
+
+<details>
+<summary>参数与结果格式</summary>
 
 ### `everything_search`
 
@@ -107,7 +172,8 @@ IPC 提供上述全部字段与排序。HTTP 支持按名称、路径、大小�
 
 **输出格式：**
 
-输出使用节省 Token 的紧凑二维矩阵格式：
+输出先列出列名，再逐行返回数据：
+
 ```json
 {
   "results": [
@@ -133,40 +199,10 @@ IPC 提供上述全部字段与排序。HTTP 支持按名称、路径、大小�
 检查 Everything 连接状态、运行实例、版本及索引就绪情况。
 
 **参数说明：**
+
 - `verbose`（boolean，默认 `false`）：包含已索引条目总数与当前限制配置。
 
----
-
-## 环境变量
-
-| 环境变量 | 默认值 | 说明 |
-| --- | --- | --- |
-| `EVERYTHING_INSTANCE` | 自动探测 | 自动探测默认实例、`1.5a` 和 `1.5`。自定义实例通过此项指定；`""` 选择默认实例。 |
-| `EVERYTHING_URL` | `""` | Everything HTTP 服务地址（例如 `http://127.0.0.1:17603/`）。设置后优先使用 HTTP 通道。 |
-| `EVERYTHING_USERNAME` | `""` | HTTP 服务的基础认证用户名。 |
-| `EVERYTHING_PASSWORD` | `""` | HTTP 服务的基础认证密码。 |
-| `EVERYTHING_MAX_RESULTS` | `1000` | 每项查询及整批查询的总行数上限（1–1000）。 |
-| `EVERYTHING_OUTPUT_BYTES` | `16384` | 单次工具调用的输出字节上限预算（4096–65536）。 |
-| `EVERYTHING_TIMEOUT_MS` | `15000` | 查询超时毫秒数（100–120000）。 |
-| `EVERYTHING_ES_PATH` | 内置路径 | 自定义 `es.exe` 可执行文件路径。 |
-
----
-
-## 命令行与连接诊断
-
-检查当前环境中的 Everything 连接状态：
-
-```powershell
-npx -y everything-mcp-server doctor
-```
-
-直接在命令行运行查询：
-
-```powershell
-npx -y everything-mcp-server search '{"requests": [{"query": "ext:pdf", "count": 5}]}'
-```
-
----
+</details>
 
 ## 本地开发
 
