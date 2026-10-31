@@ -6,11 +6,9 @@ npm package: `everything-mcp-server`
 
 MCP Registry name: `io.github.EcRal5t/everything-search-mcp`
 
-## Prepare the first release
+## Prepare a release
 
-Choose the release version when ready to publish. Set it in `package.json`, `server.json`, and `server.json`'s npm package entry.
-
-Remove `"private": true` from `package.json` to enable npm publishing.
+Set the release version in `package.json`, `server.json`, and `server.json`'s npm package entry. The MCP handshake reads the version from `package.json`.
 
 ```powershell
 npm ci --ignore-scripts
@@ -19,7 +17,7 @@ npm run test:live
 npm pack --dry-run
 ```
 
-Check that the tarball contains the source, documentation, ES helpers, and licenses.
+Check that the tarball contains the source, documentation, ES helpers, and licenses. Install it in a separate directory and verify the MCP connection. Commit the release metadata, push to GitHub, and create the matching version tag and GitHub release.
 
 ## Publish to npm
 
