@@ -1,19 +1,19 @@
 # dsh-everything-mcp
 
-DeepSeek Harness bundle for [Everything Search MCP](https://github.com/EcRal5t/everything-search-mcp). It mounts the server through DSH's in-box MCP client, so the model gets `mcp__everything__everything_search` and `mcp__everything__everything_status`.
+Instant file and folder search on Windows, powered by [Everything](https://www.voidtools.com/). Ask for a file by name, pattern, folder, size or date and DeepSeek Harness answers from Everything's index — no drive scanning, no waiting.
 
-Configuration only: no Host plugin, no web UI, no build step, no state.
+The plugin gives the assistant two read-only tools — `search` and `status` — and there is nothing else to configure. In DSH they appear as `mcp__everything__search` and `mcp__everything__status`. Under the hood it connects the [Everything Search MCP](https://github.com/EcRal5t/everything-search-mcp) server through DSH's built-in MCP client: no Host plugin, no web UI, no build step, no state.
 
 ## Install
 
 ```powershell
-dsh plugin --profile <profile> add github:EcRal5t/everything-search-mcp#path:/plugins/dsh-everything-mcp
+dsh plugin --profile <profile> add dsh-everything-mcp
 ```
 
-Once this package is on npm, the shorter form works too:
+Or install straight from the repository:
 
 ```powershell
-dsh plugin --profile <profile> add dsh-everything-mcp
+dsh plugin --profile <profile> add github:EcRal5t/everything-search-mcp#path:/plugins/dsh-everything-mcp
 ```
 
 Restart the profile afterwards. `pnpm` must be on `PATH` — the DSH plugin manager forwards to it.

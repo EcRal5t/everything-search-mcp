@@ -1,6 +1,6 @@
 {
   "name": "everything-mcp-server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Fast Windows file search MCP server powered by Everything",
   "mcpName": "io.github.EcRal5t/everything-search-mcp",

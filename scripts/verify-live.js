@@ -17,7 +17,7 @@ const call = async (name, args = {}) => {
   assert.ok(!result.isError, JSON.stringify(result));
   return result.structuredContent;
 };
-const search = async requests => (await call('everything_search', { requests })).results;
+const search = async requests => (await call('search', { requests })).results;
 try {
   for (const [name, size] of samples) {
     await fs.mkdir(path.dirname(path.join(root, name)), { recursive: true });
@@ -25,8 +25,8 @@ try {
   }
   await fs.mkdir(path.join(root, '空目录'));
   await c.connect(new StdioClientTransport({ command: process.execPath, args: [path.join(project, 'src/cli.js')], env: process.env, stderr: 'pipe' }));
-  assert.deepEqual((await c.listTools()).tools.map(tool => tool.name).sort(), ['everything_search', 'everything_status']);
-  const status = await call('everything_status');
+  assert.deepEqual((await c.listTools()).tools.map(tool => tool.name).sort(), ['search', 'status']);
+  const status = await call('status');
   const requests = [
     { root, kind: 'file', fields: ['size', 'date_modified'] },
     { root, recursive: false, kind: 'folder', fields: ['size'], sort: 'size', ascending: false },
@@ -63,7 +63,7 @@ try {
     assert.ok(Number.isInteger(metadata.rows[0][4]));
     assert.equal(metadata.rows[0][5], 0);
   }
-  const bad = await c.callTool({ name: 'everything_search', arguments: { requests: [{ root, query: 'content:test' }, { root: root + '-missing' }] } });
+  const bad = await c.callTool({ name: 'search', arguments: { requests: [{ root, query: 'content:test' }, { root: root + '-missing' }] } });
   assert.equal(bad.isError, true);
   assert.deepEqual(bad.structuredContent.results.map(result => result.error.code), ['UNSUPPORTED_QUERY', 'ROOT_NOT_FOUND']);
   await c.readResource({ uri: 'everything://syntax' });

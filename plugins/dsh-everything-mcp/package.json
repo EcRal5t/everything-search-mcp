@@ -1,7 +1,7 @@
 {
   "name": "dsh-everything-mcp",
-  "version": "0.1.0",
-  "description": "Config-only DeepSeek Harness bundle that mounts the Everything (voidtools) search MCP server as mcp__everything__* tools. No plugin code.",
+  "version": "0.1.1",
+  "description": "Instant file and folder search on Windows with Everything (voidtools), right inside DeepSeek Harness.",
   "license": "MIT",
   "author": {
     "name": "EcRal5t",

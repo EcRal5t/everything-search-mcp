@@ -67,13 +67,19 @@ opencode mcp add
 <details>
 <summary>DeepSeek Harness</summary>
 
-安装配置包（通过 DSH 内置的 MCP 客户端挂载，不改动其他东西）：
+安装插件后重启该 profile：
+
+```powershell
+dsh plugin --profile <profile> add dsh-everything-mcp
+```
+
+也可以直接从仓库安装：
 
 ```powershell
 dsh plugin --profile <profile> add github:EcRal5t/everything-search-mcp#path:/plugins/dsh-everything-mcp
 ```
 
-重启该 profile 后，工具以 `mcp__everything__everything_search` 和 `mcp__everything__everything_status` 出现。也可以手工在 profile 的 `cordis.patch.yml` 里加：
+工具以 `mcp__everything__search` 和 `mcp__everything__status` 出现。也可以手工在 profile 的 `cordis.patch.yml` 里加：
 
 ```yaml
 - insert:
@@ -125,8 +131,8 @@ VS Code 的顶层字段使用 `servers`。
 
 | 工具 | 用途 |
 | --- | --- |
-| `everything_search` | 查找路径、浏览目录、统计数量，以及取得大小或其他索引元数据。 |
-| `everything_status` | 查看连接状态、所选 Everything 实例和版本。 |
+| `search` | 查找路径、浏览目录、统计数量，以及取得大小或其他索引元数据。 |
+| `status` | 查看连接状态、所选 Everything 实例和版本。 |
 
 ## 连接设置
 
@@ -169,7 +175,7 @@ npx -y everything-mcp-server search '{"requests": [{"query": "ext:pdf", "count":
 <details>
 <summary>参数与结果格式</summary>
 
-### `everything_search`
+### `search`
 
 搜索文件/目录、浏览文件夹、统计数量及获取元数据。
 
@@ -220,7 +226,7 @@ IPC 提供上述全部字段与排序。HTTP 支持按名称、路径、大小�
 将 `base` 与 `rows` 中的相对路径拼接即可得到完整路径。
 文件与文件夹大小采用 Everything 索引中的逻辑字节数。
 
-### `everything_status`
+### `status`
 
 检查 Everything 连接状态、运行实例、版本及索引就绪情况。
 

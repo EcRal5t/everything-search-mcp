@@ -25,8 +25,8 @@ export function createServer(client = new AgentClient()) {
     }
   });
 
-  register('everything_search', 'Find file/folder paths and indexed metadata across drives or within root. Use workspace search or rg for file contents. Submit 1–8 requests; recursive:false browses; count:0 counts; add kind:"file", fields:["size"] to sum matched bytes.', requestsSchema, searchOutputSchema, (args, signal) => compactSearch(client, args, signal));
-  register('everything_status', 'Check connection status, selected instance, version, and index readiness.', diagnosticSchema, statusOutputSchema, (args, signal) => client.status(signal, args.verbose));
+  register('search', 'Find file/folder paths and indexed metadata across drives or within root. Use workspace search or rg for file contents. Submit 1–8 requests; recursive:false browses; count:0 counts; add kind:"file", fields:["size"] to sum matched bytes.', requestsSchema, searchOutputSchema, (args, signal) => compactSearch(client, args, signal));
+  register('status', 'Check connection status, selected instance, version, and index readiness.', diagnosticSchema, statusOutputSchema, (args, signal) => client.status(signal, args.verbose));
   server.registerResource('everything-syntax', 'everything://syntax', { description: 'Query syntax and result semantics', mimeType: 'application/json' }, async uri => ({ contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(syntax) }] }));
   return server;
 }

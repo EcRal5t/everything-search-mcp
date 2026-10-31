@@ -25,7 +25,7 @@ test('MCP validates raw arguments and returns readable backend errors', async ()
 
   try {
     const tools = await c.listTools();
-    const searchTool = tools.tools.find(t => t.name === 'everything_search');
+    const searchTool = tools.tools.find(t => t.name === 'search');
     assert.ok(searchTool);
     assert.deepEqual(Object.keys(searchTool.inputSchema.properties), ['requests']);
     assert.deepEqual(searchTool.inputSchema.required, ['requests']);
@@ -36,23 +36,23 @@ test('MCP validates raw arguments and returns readable backend errors', async ()
       { requests: [{ count: 0 }], typo: true },
       { typo: true, query: 'test' },
     ]) {
-      const result = await c.callTool({ name: 'everything_search', arguments: args });
+      const result = await c.callTool({ name: 'search', arguments: args });
       assert.equal(result.isError, true);
       assert.match(result.content[0].text, /Unrecognized key/);
     }
 
-    const singleResult = await c.callTool({ name: 'everything_search', arguments: { requests: [{ query: 'test.pdf', count: 5 }] } });
+    const singleResult = await c.callTool({ name: 'search', arguments: { requests: [{ query: 'test.pdf', count: 5 }] } });
     assert.ok(!singleResult.isError);
     assert.equal(singleResult.structuredContent.results[0].rows[0][0], 'test.pdf');
 
     // Success with batch query
-    const batchResult = await c.callTool({ name: 'everything_search', arguments: { requests: [{ query: 'batch1.txt' }, { query: 'batch2.txt' }] } });
+    const batchResult = await c.callTool({ name: 'search', arguments: { requests: [{ query: 'batch1.txt' }, { query: 'batch2.txt' }] } });
     assert.ok(!batchResult.isError);
     const batchData = batchResult.structuredContent;
     assert.equal(batchData.results.length, 2);
 
     // Status error
-    const result = await c.callTool({ name: 'everything_status', arguments: {} });
+    const result = await c.callTool({ name: 'status', arguments: {} });
     assert.equal(result.isError, true);
     assert.equal(JSON.parse(result.content[0].text).error.code, 'CONNECTION_FAILED');
   } finally {

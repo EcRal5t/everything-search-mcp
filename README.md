@@ -67,13 +67,19 @@ opencode mcp add
 <details>
 <summary>DeepSeek Harness</summary>
 
-Install the bundle — it adds the server through DSH's built-in MCP client and changes nothing else:
+Install the plugin, then restart the profile:
+
+```powershell
+dsh plugin --profile <profile> add dsh-everything-mcp
+```
+
+Or install straight from this repository:
 
 ```powershell
 dsh plugin --profile <profile> add github:EcRal5t/everything-search-mcp#path:/plugins/dsh-everything-mcp
 ```
 
-Restart the profile. The tools appear as `mcp__everything__everything_search` and `mcp__everything__everything_status`. To wire it by hand instead, add this row to the profile's `cordis.patch.yml`:
+The tools appear as `mcp__everything__search` and `mcp__everything__status`. To wire it by hand instead, add this row to the profile's `cordis.patch.yml`:
 
 ```yaml
 - insert:
@@ -125,8 +131,8 @@ Both tools are read-only.
 
 | Tool | Purpose |
 | --- | --- |
-| `everything_search` | Find paths, browse folders, count matches, and retrieve sizes or other indexed metadata. |
-| `everything_status` | Check the connection, selected Everything instance, and version. |
+| `search` | Find paths, browse folders, count matches, and retrieve sizes or other indexed metadata. |
+| `status` | Check the connection, selected Everything instance, and version. |
 
 ## Connection settings
 
@@ -169,7 +175,7 @@ npx -y everything-mcp-server search '{"requests": [{"query": "ext:pdf", "count":
 <details>
 <summary>Parameters and result format</summary>
 
-### `everything_search`
+### `search`
 
 Search, browse directories, count items, and retrieve indexed metadata.
 
@@ -220,7 +226,7 @@ Results label columns once, followed by row arrays:
 Combine `base` with relative paths in `rows` to obtain full file paths.
 File and folder sizes use logical byte counts from Everything's index.
 
-### `everything_status`
+### `status`
 
 Check backend connectivity, Everything version, selected instance, and index status.
 

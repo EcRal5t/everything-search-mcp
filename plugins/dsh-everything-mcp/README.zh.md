@@ -1,19 +1,19 @@
 # dsh-everything-mcp
 
-[Everything Search MCP](https://github.com/EcRal5t/everything-search-mcp) 的 DeepSeek Harness 配置包：通过 DSH 内置的 MCP 客户端挂载服务器，模型侧得到 `mcp__everything__everything_search` 和 `mcp__everything__everything_status`。
+在 Windows 上即时搜索文件和文件夹，底层是 [Everything](https://www.voidtools.com/)。按名称、通配符、目录、大小或日期发问，DeepSeek Harness 直接从 Everything 的索引作答——不扫盘、不等待。
 
-纯配置，没有 Host 插件、没有 Web 界面、不需要构建、不落状态。
+插件给助手两个只读工具 `search` 和 `status`，此外没有需要配置的东西；在 DSH 里显示为 `mcp__everything__search` 和 `mcp__everything__status`。它通过 DSH 内置的 MCP 客户端连接 [Everything Search MCP](https://github.com/EcRal5t/everything-search-mcp) 服务器：没有 Host 插件、没有 Web 界面、不需要构建、不落状态。
 
 ## 安装
 
 ```powershell
-dsh plugin --profile <profile> add github:EcRal5t/everything-search-mcp#path:/plugins/dsh-everything-mcp
+dsh plugin --profile <profile> add dsh-everything-mcp
 ```
 
-包发布到 npm 后也可以用短形式：
+也可以直接从仓库安装：
 
 ```powershell
-dsh plugin --profile <profile> add dsh-everything-mcp
+dsh plugin --profile <profile> add github:EcRal5t/everything-search-mcp#path:/plugins/dsh-everything-mcp
 ```
 
 安装后重启该 profile。`pnpm` 需要在 `PATH` 上（DSH 插件管理器会转发给它）。
