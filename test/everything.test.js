@@ -53,3 +53,19 @@ test('a stalled HTTP response body obeys the search deadline', async () => {
     await assert.rejects(new AgentClient({ EVERYTHING_URL: 'http://127.0.0.1:' + server.address().port + '/' }).search({ timeout_ms: 100 }), error => error.code === 'TIMEOUT');
   } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 });
+
+test('compactSearch correctly handles output_bytes metadata at tight budget boundaries', async () => {
+  const rows = [row('a'.repeat(150), '100'), row('b'.repeat(150), '100'), row('c'.repeat(150), '100')];
+  // With 8 batch requests at 4096 outputBytes, budget per request is Math.floor((4096-512)/8) = 448.
+  // 1 row with limited_by is ~280 bytes <= 448. 2 rows with limited_by is 453 bytes > 448.
+  // Binary search must evaluate candidate with limited_by included, trimming to 1 row and succeeding.
+  const tightClient = client(rows, { EVERYTHING_OUTPUT_BYTES: '4096' });
+  const reqs = Array.from({ length: 8 }, () => ({ count: 3, fields: ['size'] }));
+  const result = await compactSearch(tightClient, { requests: reqs });
+  assert.equal(result.results.length, 8);
+  for (const item of result.results) {
+    assert.equal(item.rows.length, 1);
+    assert.deepEqual(item.limited_by, ['output_bytes']);
+  }
+  assert.ok(Buffer.byteLength(JSON.stringify(result)) <= 4096);
+});

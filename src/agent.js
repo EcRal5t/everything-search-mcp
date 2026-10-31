@@ -82,7 +82,7 @@ export class AgentClient {
       const { transport, info } = await this.ensureSelected(signal);
       const result = await transport.request({}, 0, '', signal);
       return { ready: true, transport: info.transport, version: info.version, instance: info.instance,
-        capabilities: ['paths', 'count', 'browse', 'batch', 'file_size', 'folder_size', 'total_file_size', 'modified_time', 'pcre2_validation', ...(info.transport === 'ipc' ? ['created_time', 'accessed_time', 'attributes', 'run_count'] : []), ...(info.version?.startsWith('1.5.') ? ['dupe'] : [])], problems: [],
+        capabilities: ['paths', 'count', 'browse', 'batch', 'file_size', 'folder_size', 'total_file_size', 'modified_time', 'regex', ...(info.transport === 'ipc' ? ['created_time', 'accessed_time', 'attributes', 'run_count'] : []), ...(info.version?.startsWith('1.5.') ? ['dupe'] : [])], problems: [],
         ...(verbose ? { details: { total_indexed: result.totalResults, backend: info.url ?? 'local IPC', limits: { max_results: this.config.maxResults, output_bytes: this.config.outputBytes } } } : {}) };
     } catch (error) {
       if (signal?.aborted) throw error;

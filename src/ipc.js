@@ -23,7 +23,7 @@ export class IpcTransport {
   }
   async call(args, signal, timeoutMs = this.timeoutMs) {
     const result = await this.runner(this.executable, ['-argv', '-code-page', '65001', '-instance', this.instance, ...args], { signal, timeoutMs, maxBytes: this.responseBytes });
-    if (result.code !== 0) throw new AgentError(result.code === 8 ? 'INSTANCE_NOT_FOUND' : result.code === 6 ? 'ES_VERSION_UNSUPPORTED' : 'IPC_QUERY_FAILED', `ES IPC request failed (exit ${result.code})`, true, 'Run everything-agent doctor; check the instance, index readiness, helper version and process permissions.');
+    if (result.code !== 0) throw new AgentError(result.code === 8 ? 'INSTANCE_NOT_FOUND' : result.code === 6 ? 'ES_VERSION_UNSUPPORTED' : 'IPC_QUERY_FAILED', `ES IPC request failed (exit ${result.code})`, true, 'Run everything-mcp-server doctor; check the instance, index readiness, helper version and process permissions.');
     return result.stdout;
   }
   async getVersion(signal) {

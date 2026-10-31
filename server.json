@@ -7,13 +7,13 @@
     "url": "https://github.com/EcRal5t/everything-search-mcp",
     "source": "github"
   },
-  "version": "unreleased",
+  "version": "0.1.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
-      "identifier": "everything-agent",
-      "version": "unreleased",
+      "identifier": "everything-mcp-server",
+      "version": "0.1.0",
       "transport": {
         "type": "stdio"
       }

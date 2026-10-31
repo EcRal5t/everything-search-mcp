@@ -24,7 +24,7 @@ try {
     await fs.writeFile(path.join(root, name), Buffer.alloc(size, 65));
   }
   await fs.mkdir(path.join(root, '空目录'));
-  await c.connect(new StdioClientTransport({ command: process.execPath, args: [path.join(project, 'src/cli.js')], stderr: 'pipe' }));
+  await c.connect(new StdioClientTransport({ command: process.execPath, args: [path.join(project, 'src/cli.js')], env: process.env, stderr: 'pipe' }));
   assert.deepEqual((await c.listTools()).tools.map(tool => tool.name).sort(), ['everything_search', 'everything_status']);
   const status = await call('everything_status');
   const requests = [
@@ -63,9 +63,9 @@ try {
     assert.ok(Number.isInteger(metadata.rows[0][4]));
     assert.equal(metadata.rows[0][5], 0);
   }
-  const bad = await c.callTool({ name: 'everything_search', arguments: { requests: [{ root, query: '([', regex: true }, { root: root + '-missing' }] } });
+  const bad = await c.callTool({ name: 'everything_search', arguments: { requests: [{ root, query: 'content:test' }, { root: root + '-missing' }] } });
   assert.equal(bad.isError, true);
-  assert.deepEqual(bad.structuredContent.results.map(result => result.error.code), ['INVALID_REGEX', 'ROOT_NOT_FOUND']);
+  assert.deepEqual(bad.structuredContent.results.map(result => result.error.code), ['UNSUPPORTED_QUERY', 'ROOT_NOT_FOUND']);
   await c.readResource({ uri: 'everything://syntax' });
   const httpUrl = process.env.EVERYTHING_TEST_HTTP_URL;
   if (httpUrl) {

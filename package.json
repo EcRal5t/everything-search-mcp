@@ -1,8 +1,9 @@
 {
-  "name": "everything-agent",
+  "name": "everything-mcp-server",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Fast file search on Windows with Everything, for MCP clients and the command line",
+  "description": "Fast Windows file search MCP server powered by Everything",
   "mcpName": "io.github.EcRal5t/everything-search-mcp",
   "author": "EcRal5t",
   "repository": {
@@ -13,7 +14,13 @@
   "bugs": {
     "url": "https://github.com/EcRal5t/everything-search-mcp/issues"
   },
-  "keywords": ["mcp", "everything", "file-search", "windows", "voidtools"],
+  "keywords": [
+    "mcp",
+    "everything",
+    "file-search",
+    "windows",
+    "voidtools"
+  ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public"
@@ -25,17 +32,15 @@
     "start": "node src/server.js",
     "cli": "node src/cli.js",
     "test": "node --test test/*.test.js",
-    "test:live": "node scripts/verify-live.js",
-    "install:codex": "node scripts/install-codex.js"
+    "test:live": "node scripts/verify-live.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
-    "pcre2-wasm": "10.49.2",
     "zod": "4.6.7"
   },
   "license": "MIT",
   "bin": {
-    "everything-agent": "src/cli.js"
+    "everything-mcp-server": "src/cli.js"
   },
   "files": [
     "src/",
@@ -44,9 +49,6 @@
     "README.zh-CN.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
-    "scripts/discover.ps1",
-    "scripts/install-codex.js",
-    ".agents/skills/everything-search/SKILL.md",
     "examples/"
   ]
 }

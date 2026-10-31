@@ -68,7 +68,7 @@ export function resultPath(row) {
 }
 
 export const syntax = {
-  query_language: 'Everything native syntax; regex:true treats query as a PCRE filename/path pattern',
+  query_language: 'Everything native syntax; regex:true treats query as a regular expression pattern',
   examples: [
     { query: 'ext:pdf;docx report', purpose: 'Documents with report in filename' },
     { query: 'size:>100mb dm:thismonth', purpose: 'Large recently modified files' },
@@ -77,7 +77,7 @@ export const syntax = {
     { query: 'ext:log', kind: 'file', count: 0, fields: ['size'], purpose: 'Count matching files and sum their indexed logical bytes' },
   ],
   operators: { and: 'space', or: '|', not: '!', grouping: '<...>', literal: '"..."', wildcard: '* ?', extension: 'ext:ts;js', size: 'size:>10mb or size:1kb..1mb', modified: 'dm:today / dm:thisweek / dm:2026-01-01..2026-12-31', created: 'dc:thismonth', direct_children: 'parent:"D:\\Projects"' },
-  notes: ['Empty query matches all; omitted root searches the selected index.', 'Use regex:true with a PCRE pattern; root/kind filters stay active.', 'Use this service for paths and metadata, and rg for file content. Directory exclusions use !path:node_modules.', 'Results and pagination use a live index. File and folder sizes use indexed logical bytes.'],
+  notes: ['Empty query matches all; omitted root searches the selected index.', 'Use regex:true with a regular expression pattern; root/kind filters stay active.', 'Directory exclusions use !path:node_modules.', 'Results and pagination use a live index. File and folder sizes use indexed logical bytes.'],
   docs: ['https://www.voidtools.com/support/everything/searching/', 'https://www.voidtools.com/support/everything/http/'],
 };
 
